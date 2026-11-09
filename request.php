@@ -1,197 +1,126 @@
-<?php
+<?php require_once __DIR__ . '/includes/header.php'; ?>
 
-require_once __DIR__ . '/includes/db.php';
-require_once __DIR__ . '/includes/auth.php';
-require_once __DIR__ . '/includes/helpers.php';
+<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-20 space-y-12">
 
-start_secure_session();
+    <!-- Booking & Location Section -->
+    <div class="grid lg:grid-cols-3 gap-8 items-start">
+        
+        <!-- Left Column: Booking Form (2 Columns wide) -->
+        <div class="lg:col-span-2 bg-white dark:bg-slate-900/80 p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm transition-colors">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 flex items-center justify-center text-lg">
+                    <i class="fa-regular fa-calendar-check"></i>
+                </div>
+                <div>
+                    <span class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Online Booking</span>
+                    <h1 class="text-2xl font-bold text-slate-900 dark:text-white">Tell us what needs fixing.</h1>
+                </div>
+            </div>
 
-$pageTitle = 'Request a Repair';
-$fields    = ['customer_name', 'email', 'phone', 'device_brand', 'device_model', 'issue', 'notes', 'service_id'];
-$old       = array_fill_keys($fields, '');
-$errors    = [];
-$formError = '';
-$services  = [];
+            <p class="text-sm text-slate-500 dark:text-slate-400 mb-8">
+                Submit your repair request and we'll have a technician ready to assess your phone when you arrive.
+            </p>
 
-$confirmedCode = null;
-if (isset($_GET['done']) && !empty($_SESSION['last_request_code'])) {
-    $confirmedCode = $_SESSION['last_request_code'];
-    unset($_SESSION['last_request_code']);
-}
+            <form action="#" method="POST" class="space-y-6">
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase mb-2">Full name</label>
+                        <input type="text" placeholder="e.g. Jordan Lee" class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase mb-2">Email address</label>
+                        <input type="email" placeholder="you@email.com" class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors">
+                    </div>
+                </div>
 
-try {
-    $services = $pdo->query('SELECT service_id, service_name FROM services ORDER BY service_name')->fetchAll();
-} catch (PDOException $e) {
-    error_log('request.php services query failed: ' . $e->getMessage());
-}
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase mb-2">Phone number</label>
+                        <input type="text" placeholder="(415) 555-0120" class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase mb-2">Phone brand</label>
+                        <input type="text" placeholder="e.g. Apple, Samsung" class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors">
+                    </div>
+                </div>
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    foreach ($fields as $f) {
-        $v = $_POST[$f] ?? '';
-        $old[$f] = is_string($v) ? trim($v) : '';
-    }
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase mb-2">Phone model</label>
+                        <input type="text" placeholder="e.g. iPhone 15 Pro" class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase mb-2">Repair type</label>
+                        <select class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors">
+                            <option value="" disabled selected>Select a repair</option>
+                            <option value="Screen Replacement">LCD & Screen Replacement</option>
+                            <option value="Battery Replacement">Battery Replacement</option>
+                            <option value="Charging Port">Charging Port Repair</option>
+                            <option value="Camera Repair">Camera Repair</option>
+                            <option value="Water Damage">Water Damage Treatment</option>
+                            <option value="Diagnostics">Diagnostics & Software</option>
+                        </select>
+                    </div>
+                </div>
 
-    if (!verify_csrf($_POST['csrf_token'] ?? '')) {
-        $formError = 'Session expired, please try again.';
-    } else {
-        $errors = validate_request_form($old);
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase mb-2">Notes</label>
+                    <textarea rows="4" placeholder="Describe the issue, damage, or anything our technician should know." class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"></textarea>
+                </div>
 
-        $serviceId = null;
-        if ($old['service_id'] !== '') {
-            $validIds = array_map('intval', array_column($services, 'service_id'));
-            if (!ctype_digit($old['service_id']) || !in_array((int) $old['service_id'], $validIds, true)) {
-                $errors['service_id'] = 'Please choose a valid service.';
-            } else {
-                $serviceId = (int) $old['service_id'];
-            }
-        }
-
-        if (!$errors) {
-            try {
-                $pdo->beginTransaction();
-
-                $stmt = $pdo->prepare(
-                    'INSERT INTO repair_requests
-                        (request_code, service_id, customer_name, email, phone,
-                         device_brand, device_model, issue, notes)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
-                );
-                $stmt->execute([
-                    'TMP-' . bin2hex(random_bytes(8)),   // temporary code, replaced below
-                    $serviceId,
-                    $old['customer_name'],
-                    $old['email'],
-                    normalize_phone($old['phone']),
-                    $old['device_brand'],
-                    $old['device_model'],
-                    $old['issue'],
-                    $old['notes'] !== '' ? $old['notes'] : null,
-                ]);
-
-                $id   = (int) $pdo->lastInsertId();
-                $code = generate_request_code($id);
-
-                $upd = $pdo->prepare('UPDATE repair_requests SET request_code = ? WHERE request_id = ?');
-                $upd->execute([$code, $id]);
-
-                $pdo->commit();
-
-                $_SESSION['last_request_code'] = $code;
-                unset($_SESSION['csrf_token']);   // new token for the next form
-                header('Location: ' . BASE_URL . '/request.php?done=1');
-                exit;
-            } catch (Throwable $e) {
-                if ($pdo->inTransaction()) {
-                    $pdo->rollBack();
-                }
-                error_log('request.php save failed: ' . $e->getMessage());
-                $formError = 'Sorry, we could not save your request. Please try again.';
-            }
-        }
-    }
-}
-
-$inputClass = 'w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500';
-
-require __DIR__ . '/includes/header.php';
-?>
-
-<?php if ($confirmedCode): ?>
-    <div class="max-w-xl mx-auto bg-white rounded-lg shadow p-8 text-center">
-        <h1 class="text-2xl font-bold text-green-600 mb-2">Request submitted!</h1>
-        <p class="text-gray-600 mb-4">Keep your Request ID to track your repair.</p>
-        <p class="text-3xl font-mono font-bold bg-gray-100 rounded-lg py-3 mb-6"><?= e($confirmedCode) ?></p>
-        <div class="flex flex-wrap justify-center gap-3">
-            <a href="<?= BASE_URL ?>/track.php?search=<?= urlencode($confirmedCode) ?>"
-               class="bg-blue-600 text-white px-5 py-2 rounded-lg font-medium hover:bg-blue-700">Track this repair</a>
-            <a href="<?= BASE_URL ?>/index.php"
-               class="border border-gray-300 px-5 py-2 rounded-lg font-medium hover:bg-gray-100">Back to services</a>
+                <div class="pt-2">
+                    <button type="button" class="px-6 py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm transition inline-flex items-center gap-2 shadow-sm">
+                        Submit repair order <i class="fa-solid fa-arrow-right text-xs"></i>
+                    </button>
+                    <p class="text-xs text-slate-400 dark:text-slate-500 mt-3">
+                        No payment is required now. We'll confirm the final quote before starting any work.
+                    </p>
+                </div>
+            </form>
         </div>
-    </div>
 
-<?php else: ?>
-    <div class="max-w-xl mx-auto">
-        <h1 class="text-3xl font-bold mb-1">Request a Repair</h1>
-        <p class="text-gray-600 mb-6">Fill in the form and we will get started on your device.</p>
-
-        <?php if ($formError): ?>
-            <p class="bg-red-100 text-red-700 p-4 rounded-lg mb-4"><?= e($formError) ?></p>
-        <?php elseif ($errors): ?>
-            <p class="bg-red-100 text-red-700 p-4 rounded-lg mb-4">Please fix the errors below.</p>
-        <?php endif; ?>
-
-        <form method="post" action="<?= BASE_URL ?>/request.php" class="bg-white rounded-lg shadow p-6 space-y-4" novalidate>
-            <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
-
+        <!-- Right Column: Workshop Location Card -->
+        <div class="bg-white dark:bg-slate-900/80 p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6 transition-colors">
+            <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 flex items-center justify-center text-lg">
+                <i class="fa-solid fa-location-dot"></i>
+            </div>
+            
             <div>
-                <label for="customer_name" class="block font-medium mb-1">Full name *</label>
-                <input type="text" id="customer_name" name="customer_name" maxlength="100"
-                       value="<?= e($old['customer_name']) ?>" class="<?= $inputClass ?>">
-                <?= field_error($errors, 'customer_name') ?>
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Visit the workshop</span>
+                <h3 class="text-xl font-bold text-slate-900 dark:text-white mt-1">Downtown Service Center</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">214 Market Street, San Francisco, CA 94105</p>
             </div>
 
-            <div>
-                <label for="email" class="block font-medium mb-1">Email *</label>
-                <input type="email" id="email" name="email" maxlength="100"
-                       value="<?= e($old['email']) ?>" class="<?= $inputClass ?>">
-                <?= field_error($errors, 'email') ?>
+            <!-- Map Mockup Box -->
+            <div class="h-32 bg-blue-50/50 dark:bg-blue-950/30 rounded-xl border border-blue-100 dark:border-blue-900/40 flex flex-col items-center justify-center text-blue-600 dark:text-blue-400 gap-1 text-sm font-medium">
+                <i class="fa-solid fa-location-dot text-xl"></i>
+                <span class="text-xs">Downtown San Francisco</span>
             </div>
 
-            <div>
-                <label for="phone" class="block font-medium mb-1">Phone number *</label>
-                <input type="text" id="phone" name="phone" maxlength="25" placeholder="e.g. 0917 123 4567"
-                       value="<?= e($old['phone']) ?>" class="<?= $inputClass ?>">
-                <?= field_error($errors, 'phone') ?>
-            </div>
-
-            <div class="grid gap-4 sm:grid-cols-2">
+            <div class="space-y-4 text-xs text-slate-600 dark:text-slate-400 pt-2">
                 <div>
-                    <label for="device_brand" class="block font-medium mb-1">Device brand *</label>
-                    <input type="text" id="device_brand" name="device_brand" maxlength="50" placeholder="e.g. Samsung"
-                           value="<?= e($old['device_brand']) ?>" class="<?= $inputClass ?>">
-                    <?= field_error($errors, 'device_brand') ?>
+                    <span class="block text-slate-400 dark:text-slate-500 font-semibold mb-1">Opening hours</span>
+                    <p class="text-slate-800 dark:text-slate-200 font-medium">Monday–Friday · 9 AM–6 PM</p>
+                    <p class="text-slate-800 dark:text-slate-200 font-medium">Saturday · 10 AM–4 PM</p>
                 </div>
-                <div>
-                    <label for="device_model" class="block font-medium mb-1">Device model *</label>
-                    <input type="text" id="device_model" name="device_model" maxlength="50" placeholder="e.g. Galaxy A54"
-                           value="<?= e($old['device_model']) ?>" class="<?= $inputClass ?>">
-                    <?= field_error($errors, 'device_model') ?>
+                <div class="border-t border-slate-100 dark:border-slate-800/80 pt-3">
+                    <span class="block text-slate-400 dark:text-slate-500 font-semibold mb-1">Call us</span>
+                    <p class="font-medium text-slate-800 dark:text-slate-200">(415) 555-0120</p>
+                </div>
+                <div class="border-t border-slate-100 dark:border-slate-800/80 pt-3">
+                    <span class="block text-slate-400 dark:text-slate-500 font-semibold mb-1">Email</span>
+                    <p class="font-medium text-slate-800 dark:text-slate-200">hello@fixflow.com</p>
                 </div>
             </div>
 
-            <div>
-                <label for="service_id" class="block font-medium mb-1">Service (optional)</label>
-                <select id="service_id" name="service_id" class="<?= $inputClass ?>">
-                    <option value="">Not sure / other</option>
-                    <?php foreach ($services as $s): ?>
-                        <option value="<?= (int) $s['service_id'] ?>"
-                            <?= $old['service_id'] === (string) $s['service_id'] ? 'selected' : '' ?>>
-                            <?= e($s['service_name']) ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-                <?= field_error($errors, 'service_id') ?>
-            </div>
+            <a href="#" class="w-full flex items-center justify-between px-4 py-3 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 text-slate-700 dark:text-slate-200 font-semibold rounded-xl text-xs transition">
+                <span>Get directions</span>
+                <i class="fa-solid fa-arrow-right text-xs text-slate-400 dark:text-slate-500"></i>
+            </a>
+        </div>
 
-            <div>
-                <label for="issue" class="block font-medium mb-1">What is the problem? *</label>
-                <input type="text" id="issue" name="issue" maxlength="255" placeholder="e.g. Cracked screen"
-                       value="<?= e($old['issue']) ?>" class="<?= $inputClass ?>">
-                <?= field_error($errors, 'issue') ?>
-            </div>
-
-            <div>
-                <label for="notes" class="block font-medium mb-1">Additional notes (optional)</label>
-                <textarea id="notes" name="notes" rows="4" maxlength="1000"
-                          class="<?= $inputClass ?>"><?= e($old['notes']) ?></textarea>
-                <?= field_error($errors, 'notes') ?>
-            </div>
-
-            <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700">
-                Submit Request
-            </button>
-        </form>
     </div>
-<?php endif; ?>
 
-<?php require __DIR__ . '/includes/footer.php'; ?>
+</main>
+
+<?php require_once __DIR__ . '/includes/footer.php'; ?>
