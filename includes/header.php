@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fixflow - Customer Portal</title>
+    <title>SamFix - Customer Portal</title>
     <!-- Tailwind Play CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -27,7 +27,7 @@
                     <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-sm">
                         <i class="fa-solid fa-wrench text-sm"></i>
                     </div>
-                    <span class="font-bold text-xl tracking-tight text-slate-900 dark:text-white">fixflow<span class="text-blue-600">.</span></span>
+                    <span class="font-bold text-xl tracking-tight text-slate-900 dark:text-white">SamFix<span class="text-blue-600">.</span></span>
                 </a>
                 <span class="text-slate-300 dark:text-slate-700 hidden lg:inline">|</span>
                 <span class="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 hidden lg:inline">Customer Portal</span>
@@ -36,9 +36,9 @@
             <!-- Navigation Links -->
             <div class="hidden md:flex items-center gap-1 text-sm font-medium">
                 <a href="track.php" class="px-3 py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition">Track repair</a>
-                <a href="index.php" class="px-3 py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition">Services</a>
-                <a href="request.php" class="px-3.5 py-2 rounded-xl text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition font-semibold">Book a repair</a>
-                <a href="index.php" class="px-3 py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition">Visit us</a>
+                <a href="index.php#services" class="px-3 py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition">Services</a>
+                <a href="#booking" class="px-3.5 py-2 rounded-xl text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition font-semibold">Book a repair</a>
+                <a href="index.php#visit" class="px-3 py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition">Visit us</a>
             </div>
 
             <!-- Right Actions (Dark Mode, Help) -->

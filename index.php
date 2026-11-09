@@ -57,7 +57,7 @@
         </div>
 
         <!-- Contact & Location Box -->
-        <div class="bg-white dark:bg-slate-900/80 p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between transition-colors">
+        <div id="visit" class="bg-white dark:bg-slate-900/80 p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between transition-colors">
             <div class="space-y-6">
                 <div class="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xl">
                     <i class="fa-solid fa-users"></i>
@@ -77,7 +77,7 @@
                     </div>
                     <div class="flex items-center gap-3">
                         <i class="fa-regular fa-envelope text-slate-400 dark:text-slate-500"></i>
-                        <span class="text-slate-600 dark:text-slate-300">hello@fixflow.com</span>
+                        <span class="text-slate-600 dark:text-slate-300">hello@SamFix.com</span>
                     </div>
                     <div class="flex items-center gap-3">
                         <i class="fa-solid fa-phone text-slate-400 dark:text-slate-500"></i>
@@ -199,7 +199,7 @@
                     </div>
                     <div class="border-t border-slate-100 dark:border-slate-800/80 pt-3">
                         <span class="block text-slate-400 dark:text-slate-500 font-semibold mb-1">Email</span>
-                        <p class="font-medium text-slate-800 dark:text-slate-200">hello@fixflow.com</p>
+                        <p class="font-medium text-slate-800 dark:text-slate-200">hello@SamFix.com</p>
                     </div>
                 </div>
 
