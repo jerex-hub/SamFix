@@ -1,126 +1,142 @@
-<?php require_once __DIR__ . '/includes/header.php'; ?>
+<?php
+require_once __DIR__ . '/includes/config.php';
+require_once __DIR__ . '/includes/helpers.php';
 
-<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-20 space-y-12">
+$pageTitle = 'Book a Repair';
+$activeNav = 'book';
 
-    <!-- Booking & Location Section -->
-    <div class="grid lg:grid-cols-3 gap-8 items-start">
-        
-        <!-- Left Column: Booking Form (2 Columns wide) -->
-        <div class="lg:col-span-2 bg-white dark:bg-slate-900/80 p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm transition-colors">
-            <div class="flex items-center gap-3 mb-6">
-                <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 flex items-center justify-center text-lg">
-                    <i class="fa-regular fa-calendar-check"></i>
-                </div>
-                <div>
-                    <span class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Online Booking</span>
-                    <h1 class="text-2xl font-bold text-slate-900 dark:text-white">Tell us what needs fixing.</h1>
-                </div>
-            </div>
+$error = null;
+$successCode = null;
 
-            <p class="text-sm text-slate-500 dark:text-slate-400 mb-8">
-                Submit your repair request and we'll have a technician ready to assess your phone when you arrive.
-            </p>
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Verify CSRF token
+    if (!isset($_POST['csrf_token']) || !verify_csrf_token($_POST['csrf_token'])) {
+        $error = "Invalid security token. Please refresh the page and try again.";
+    } else {
+        $customerName = trim($_POST['customer_name'] ?? '');
+        $email        = trim($_POST['email'] ?? '');
+        $phone        = trim($_POST['phone'] ?? '');
+        $deviceModel  = trim($_POST['device_model'] ?? '');
+        $issueDesc    = trim($_POST['issue_description'] ?? '');
 
-            <form action="#" method="POST" class="space-y-6">
-                <div class="grid md:grid-cols-2 gap-6">
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase mb-2">Full name</label>
-                        <input type="text" placeholder="e.g. Jordan Lee" class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase mb-2">Email address</label>
-                        <input type="email" placeholder="you@email.com" class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors">
-                    </div>
-                </div>
+        // Basic validation
+        if ($customerName === '' || $email === '' || $phone === '' || $deviceModel === '' || $issueDesc === '') {
+            $error = "Please fill in all required fields.";
+        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $error = "Please enter a valid email address.";
+        } else {
+            try {
+                // Generate a unique tracking code e.g. SF-79A4B
+                $trackingCode = 'SF-' . strtoupper(substr(bin2hex(random_bytes(3)), 0, 6));
 
-                <div class="grid md:grid-cols-2 gap-6">
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase mb-2">Phone number</label>
-                        <input type="text" placeholder="(415) 555-0120" class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase mb-2">Phone brand</label>
-                        <input type="text" placeholder="e.g. Apple, Samsung" class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors">
-                    </div>
-                </div>
+                $stmt = $pdo->prepare("
+                    INSERT INTO repairs (tracking_code, customer_name, email, phone, device_model, issue_description, status, created_at) 
+                    VALUES (?, ?, ?, ?, ?, ?, 'Pending', NOW())
+                ");
+                $stmt->execute([$trackingCode, $customerName, $email, $phone, $deviceModel, $issueDesc]);
 
-                <div class="grid md:grid-cols-2 gap-6">
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase mb-2">Phone model</label>
-                        <input type="text" placeholder="e.g. iPhone 15 Pro" class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase mb-2">Repair type</label>
-                        <select class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors">
-                            <option value="" disabled selected>Select a repair</option>
-                            <option value="Screen Replacement">LCD & Screen Replacement</option>
-                            <option value="Battery Replacement">Battery Replacement</option>
-                            <option value="Charging Port">Charging Port Repair</option>
-                            <option value="Camera Repair">Camera Repair</option>
-                            <option value="Water Damage">Water Damage Treatment</option>
-                            <option value="Diagnostics">Diagnostics & Software</option>
-                        </select>
-                    </div>
-                </div>
+                $successCode = $trackingCode;
+            } catch (Exception $e) {
+                $error = "An error occurred while submitting your repair request. Please try again later.";
+            }
+        }
+    }
+}
 
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase mb-2">Notes</label>
-                    <textarea rows="4" placeholder="Describe the issue, damage, or anything our technician should know." class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"></textarea>
-                </div>
+require_once __DIR__ . '/includes/header.php';
+?>
 
-                <div class="pt-2">
-                    <button type="button" class="px-6 py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm transition inline-flex items-center gap-2 shadow-sm">
-                        Submit repair order <i class="fa-solid fa-arrow-right text-xs"></i>
-                    </button>
-                    <p class="text-xs text-slate-400 dark:text-slate-500 mt-3">
-                        No payment is required now. We'll confirm the final quote before starting any work.
-                    </p>
-                </div>
-            </form>
-        </div>
-
-        <!-- Right Column: Workshop Location Card -->
-        <div class="bg-white dark:bg-slate-900/80 p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6 transition-colors">
-            <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 flex items-center justify-center text-lg">
-                <i class="fa-solid fa-location-dot"></i>
-            </div>
-            
-            <div>
-                <span class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Visit the workshop</span>
-                <h3 class="text-xl font-bold text-slate-900 dark:text-white mt-1">Downtown Service Center</h3>
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">214 Market Street, San Francisco, CA 94105</p>
-            </div>
-
-            <!-- Map Mockup Box -->
-            <div class="h-32 bg-blue-50/50 dark:bg-blue-950/30 rounded-xl border border-blue-100 dark:border-blue-900/40 flex flex-col items-center justify-center text-blue-600 dark:text-blue-400 gap-1 text-sm font-medium">
-                <i class="fa-solid fa-location-dot text-xl"></i>
-                <span class="text-xs">Downtown San Francisco</span>
-            </div>
-
-            <div class="space-y-4 text-xs text-slate-600 dark:text-slate-400 pt-2">
-                <div>
-                    <span class="block text-slate-400 dark:text-slate-500 font-semibold mb-1">Opening hours</span>
-                    <p class="text-slate-800 dark:text-slate-200 font-medium">Monday–Friday · 9 AM–6 PM</p>
-                    <p class="text-slate-800 dark:text-slate-200 font-medium">Saturday · 10 AM–4 PM</p>
-                </div>
-                <div class="border-t border-slate-100 dark:border-slate-800/80 pt-3">
-                    <span class="block text-slate-400 dark:text-slate-500 font-semibold mb-1">Call us</span>
-                    <p class="font-medium text-slate-800 dark:text-slate-200">(415) 555-0120</p>
-                </div>
-                <div class="border-t border-slate-100 dark:border-slate-800/80 pt-3">
-                    <span class="block text-slate-400 dark:text-slate-500 font-semibold mb-1">Email</span>
-                    <p class="font-medium text-slate-800 dark:text-slate-200">hello@fixflow.com</p>
-                </div>
-            </div>
-
-            <a href="#" class="w-full flex items-center justify-between px-4 py-3 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 text-slate-700 dark:text-slate-200 font-semibold rounded-xl text-xs transition">
-                <span>Get directions</span>
-                <i class="fa-solid fa-arrow-right text-xs text-slate-400 dark:text-slate-500"></i>
-            </a>
-        </div>
-
+<div class="max-w-2xl mx-auto py-8">
+    <!-- Page Header -->
+    <div class="text-center mb-10">
+        <h1 class="text-3xl font-bold tracking-tight text-slate-900 dark:text-white mb-3">Book a Device Repair</h1>
+        <p class="text-slate-600 dark:text-slate-400 text-sm max-w-md mx-auto">
+            Fill out the details below to submit your device for diagnostics and repair. We will follow up with you shortly.
+        </p>
     </div>
 
-</main>
+    <?php if ($successCode): ?>
+        <!-- Success Confirmation Card -->
+        <div class="bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-900/50 rounded-2xl p-8 shadow-sm text-center space-y-6 transition-colors duration-200">
+            <div class="w-16 h-16 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mx-auto text-2xl">
+                <i class="fa-solid fa-check"></i>
+            </div>
+            <div>
+                <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-2">Repair Request Submitted!</h2>
+                <p class="text-sm text-slate-600 dark:text-slate-400">
+                    Your repair ticket has been successfully created. Keep your tracking code safe to check your repair status anytime.
+                </p>
+            </div>
 
-<?php require_once __DIR__ . '/includes/footer.php'; ?>
+            <div class="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-xl border border-slate-200 dark:border-slate-700 max-w-xs mx-auto">
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 block mb-1">Your Tracking Code</span>
+                <span class="text-xl font-mono font-bold text-blue-600 dark:text-blue-400"><?= e($successCode) ?></span>
+            </div>
+
+            <div class="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
+                <a href="track.php?code=<?= e($successCode) ?>" class="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition text-sm shadow-sm">
+                    Track this repair now
+                </a>
+                <a href="index.php" class="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium rounded-xl transition text-sm">
+                    Return home
+                </a>
+            </div>
+        </div>
+    <?php else: ?>
+
+        <!-- Error Alert -->
+        <?php if ($error): ?>
+            <div class="p-4 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 rounded-xl text-red-700 dark:text-red-400 text-sm text-center mb-6">
+                <?= e($error) ?>
+            </div>
+        <?php endif; ?>
+
+        <!-- Booking Form Card -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 sm:p-8 shadow-sm transition-colors duration-200">
+            <form method="POST" action="request.php" class="space-y-6">
+                <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">Full Name</label>
+                        <input type="text" name="customer_name" value="<?= e($_POST['customer_name'] ?? '') ?>" required placeholder="e.g. Juan Dela Cruz"
+                               class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-blue-500 text-sm transition">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">Email Address</label>
+                        <input type="email" name="email" value="<?= e($_POST['email'] ?? '') ?>" required placeholder="e.g. juan@example.com"
+                               class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-blue-500 text-sm transition">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">Phone Number</label>
+                        <input type="text" name="phone" value="<?= e($_POST['phone'] ?? '') ?>" required placeholder="e.g. 09123456789"
+                               class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-blue-500 text-sm transition">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">Device Model / Type</label>
+                        <input type="text" name="device_model" value="<?= e($_POST['device_model'] ?? '') ?>" required placeholder="e.g. Tecno Camon 18 / Laptop / Custom PC"
+                               class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-blue-500 text-sm transition">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">Describe the Issue</label>
+                    <textarea name="issue_description" rows="4" required placeholder="Please describe the hardware malfunction, symptoms, or service needed..."
+                              class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-blue-500 text-sm transition"><?= e($_POST['issue_description'] ?? '') ?></textarea>
+                </div>
+
+                <button type="submit" class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition text-sm shadow-sm flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-paper-plane text-xs"></i>
+                    <span>Submit repair request</span>
+                </button>
+            </form>
+        </div>
+    <?php endif; ?>
+</div>
+
+<?php
+require_once __DIR__ . '/includes/footer.php';
+?>
