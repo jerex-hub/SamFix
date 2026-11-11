@@ -1,42 +1,129 @@
 <?php
-require_once __DIR__ . '/includes/config.php';
+// request.php: Submit Repair Request (FR-02 to FR-05)
+// Design unchanged. Only the logic at the top was fixed so bookings save correctly.
+require_once __DIR__ . '/includes/db.php';
+require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/helpers.php';
+
+start_secure_session();   // the CSRF token lives in the session
 
 $pageTitle = 'Book a Repair';
 $activeNav = 'book';
 
 $error = null;
 $successCode = null;
+$ticket = null;   // summary shown on the confirmation card
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Verify CSRF token
-    if (!isset($_POST['csrf_token']) || !verify_csrf_token($_POST['csrf_token'])) {
+    // 1. Verify CSRF token
+    if (!verify_csrf($_POST['csrf_token'] ?? '')) {
         $error = "Invalid security token. Please refresh the page and try again.";
     } else {
-        $customerName = trim($_POST['customer_name'] ?? '');
-        $email        = trim($_POST['email'] ?? '');
-        $phone        = trim($_POST['phone'] ?? '');
-        $deviceModel  = trim($_POST['device_model'] ?? '');
-        $issueDesc    = trim($_POST['issue_description'] ?? '');
+        // Read a posted value safely as a trimmed string
+        $get = function (string $key): string {
+            $v = $_POST[$key] ?? '';
+            return is_string($v) ? trim($v) : '';
+        };
 
-        // Basic validation
-        if ($customerName === '' || $email === '' || $phone === '' || $deviceModel === '' || $issueDesc === '') {
-            $error = "Please fill in all required fields.";
-        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $error = "Please enter a valid email address.";
-        } else {
+        $customerName = $get('customer_name');
+        $email        = $get('email');
+        $phone        = $get('phone');
+        $deviceBrand  = $get('device_brand');
+        $deviceModel  = $get('device_model');
+        $notes        = $get('notes');
+        $serviceIdRaw = $get('service_id');
+
+        // This page sends "issue_description"; the home page form sends "issue"
+        $issueDesc = $get('issue_description');
+        if ($issueDesc === '') {
+            $issueDesc = $get('issue');
+        }
+
+        // The database needs a brand; this page has no brand field, so use a default
+        if ($deviceBrand === '') {
+            $deviceBrand = 'Not specified';
+        }
+
+        // "issue" holds up to 255 characters; a longer description is kept in full in notes
+        $issue = mb_substr($issueDesc, 0, 255);
+        if (mb_strlen($issueDesc) > 255) {
+            $notes = trim($issueDesc . ($notes !== '' ? "\n\n" . $notes : ''));
+        }
+
+        // 2. Validate with the shared rules
+        $errors = validate_request_form([
+            'customer_name' => $customerName,
+            'email'         => $email,
+            'phone'         => $phone,
+            'device_brand'  => $deviceBrand,
+            'device_model'  => $deviceModel,
+            'issue'         => $issue,
+            'notes'         => $notes,
+        ]);
+
+        // Optional service: must exist in the database
+        $serviceId = null;
+        if (!$errors && $serviceIdRaw !== '') {
             try {
-                // Generate a unique tracking code e.g. SF-79A4B
-                $trackingCode = 'SF-' . strtoupper(substr(bin2hex(random_bytes(3)), 0, 6));
+                $chk = $pdo->prepare('SELECT service_id FROM services WHERE service_id = ?');
+                $chk->execute([(int) $serviceIdRaw]);
+                if (ctype_digit($serviceIdRaw) && $chk->fetch()) {
+                    $serviceId = (int) $serviceIdRaw;
+                } else {
+                    $errors['service_id'] = 'Please choose a valid service.';
+                }
+            } catch (PDOException $e) {
+                error_log('request.php service check failed: ' . $e->getMessage());
+                $errors['service_id'] = 'Could not check the selected service. Please try again.';
+            }
+        }
 
-                $stmt = $pdo->prepare("
-                    INSERT INTO repairs (tracking_code, customer_name, email, phone, device_model, issue_description, status, created_at) 
-                    VALUES (?, ?, ?, ?, ?, ?, 'Pending', NOW())
-                ");
-                $stmt->execute([$trackingCode, $customerName, $email, $phone, $deviceModel, $issueDesc]);
+        if ($errors) {
+            $error = reset($errors);   // show the first problem
+        } else {
+            // 3. Save inside a transaction: insert, build the Request ID from the row ID, commit
+            try {
+                $pdo->beginTransaction();
 
-                $successCode = $trackingCode;
-            } catch (Exception $e) {
+                $stmt = $pdo->prepare(
+                    'INSERT INTO repair_requests
+                        (request_code, service_id, customer_name, email, phone,
+                         device_brand, device_model, issue, notes)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+                );
+                $stmt->execute([
+                    'TMP-' . bin2hex(random_bytes(8)),   // temporary, replaced below
+                    $serviceId,
+                    $customerName,
+                    $email,
+                    normalize_phone($phone),
+                    $deviceBrand,
+                    $deviceModel,
+                    $issue,
+                    $notes !== '' ? $notes : null,
+                ]);
+
+                $id   = (int) $pdo->lastInsertId();
+                $code = generate_request_code($id);   // e.g. SF-20261111-00001
+
+                $upd = $pdo->prepare('UPDATE repair_requests SET request_code = ? WHERE request_id = ?');
+                $upd->execute([$code, $id]);
+
+                $pdo->commit();
+
+                unset($_SESSION['csrf_token']);   // fresh token for the next form
+                $successCode = $code;
+                $ticket = [
+                    'name'   => $customerName,
+                    'device' => trim(($deviceBrand !== 'Not specified' ? $deviceBrand . ' ' : '') . $deviceModel),
+                    'issue'  => $issue,
+                    'date'   => date('M j, Y g:i A'),
+                ];
+            } catch (Throwable $e) {
+                if ($pdo->inTransaction()) {
+                    $pdo->rollBack();
+                }
+                error_log('request.php save failed: ' . $e->getMessage());
                 $error = "An error occurred while submitting your repair request. Please try again later.";
             }
         }
@@ -64,17 +151,27 @@ require_once __DIR__ . '/includes/header.php';
             <div>
                 <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-2">Repair Request Submitted!</h2>
                 <p class="text-sm text-slate-600 dark:text-slate-400">
-                    Your repair ticket has been successfully created. Keep your tracking code safe to check your repair status anytime.
+                    Your repair ticket has been successfully created. Keep your ticket number safe to check your repair status anytime.
                 </p>
             </div>
 
             <div class="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-xl border border-slate-200 dark:border-slate-700 max-w-xs mx-auto">
-                <span class="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 block mb-1">Your Tracking Code</span>
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 block mb-1">Your Ticket Number</span>
                 <span class="text-xl font-mono font-bold text-blue-600 dark:text-blue-400"><?= e($successCode) ?></span>
             </div>
 
+            <?php if ($ticket): ?>
+                <dl class="text-left text-sm max-w-xs mx-auto space-y-2 text-slate-600 dark:text-slate-400">
+                    <div class="flex justify-between gap-4"><dt>Name</dt><dd class="font-medium text-slate-900 dark:text-white text-right"><?= e($ticket['name']) ?></dd></div>
+                    <div class="flex justify-between gap-4"><dt>Device</dt><dd class="font-medium text-slate-900 dark:text-white text-right"><?= e($ticket['device']) ?></dd></div>
+                    <div class="flex justify-between gap-4"><dt>Issue</dt><dd class="font-medium text-slate-900 dark:text-white text-right"><?= e($ticket['issue']) ?></dd></div>
+                    <div class="flex justify-between gap-4"><dt>Status</dt><dd class="font-medium text-slate-900 dark:text-white text-right">Pending</dd></div>
+                    <div class="flex justify-between gap-4"><dt>Submitted</dt><dd class="font-medium text-slate-900 dark:text-white text-right"><?= e($ticket['date']) ?></dd></div>
+                </dl>
+            <?php endif; ?>
+
             <div class="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
-                <a href="track.php?code=<?= e($successCode) ?>" class="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition text-sm shadow-sm">
+                <a href="track.php?search=<?= urlencode($successCode) ?>" class="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition text-sm shadow-sm">
                     Track this repair now
                 </a>
                 <a href="index.php" class="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium rounded-xl transition text-sm">

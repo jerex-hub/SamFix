@@ -240,6 +240,12 @@ require __DIR__ . '/includes/header.php';
                     </div>
 
                     <div>
+    <label for="issue" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">What is the problem?</label>
+    <input type="text" id="issue" name="issue" required maxlength="255" placeholder="e.g. Cracked screen"
+           class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm transition-colors">
+</div>
+
+                    <div>
                         <label for="notes" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">Notes</label>
                         <textarea id="notes" name="notes" rows="4" maxlength="1000"
                                   placeholder="Describe the issue, damage, or anything our technician should know." 
