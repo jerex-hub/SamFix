@@ -1,7 +1,5 @@
 @import "tailwindcss";
 
-npx @tailwindcss/cli -i ./src/input.css -o ./assets/css/style.css --watch
-
 /* Reusable component classes for SamFix.
    Utility classes in the PHP files still work; these just remove the repeated long strings. */
 @layer components {
