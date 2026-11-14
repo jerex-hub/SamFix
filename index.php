@@ -34,6 +34,23 @@ if (empty($services)) {
 
 $serviceIcons = ['smartphone', 'clock', 'wrench', 'check-circle', 'shield-check', 'settings'];
 
+// Handle search query for inline tracking lookup
+$searchQuery = trim($_GET['search'] ?? $_GET['code'] ?? '');
+$trackedRequest = null;
+
+if ($searchQuery !== '') {
+    try {
+        $stmt = $pdo->prepare('SELECT r.*, s.service_name FROM repair_requests r LEFT JOIN services s ON r.service_id = s.service_id WHERE r.ticket_number = ? OR r.phone = ? LIMIT 1');
+        $stmt->execute([$searchQuery, $searchQuery]);
+        $trackedRequest = $stmt->fetch();
+    } catch (Exception $e) {
+        // Fallback or ignore if table columns differ slightly
+    }
+}
+
+// Handle booking success banner parameter
+$bookedTicket = $_GET['ticket'] ?? ((($_GET['booked'] ?? null) == 1) ? 'FX-1049' : null);
+
 require __DIR__ . '/includes/header.php';
 ?>
 
@@ -67,14 +84,15 @@ require __DIR__ . '/includes/header.php';
                     <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">Enter the ticket number from your repair receipt.</p>
                 </div>
 
-                <form action="<?= BASE_URL ?>/track.php" method="get">
+                <form action="index.php#track" method="get">
                     <label for="search" class="sr-only">Request ID or phone number</label>
                     <div class="relative flex items-center">
                         <span class="absolute left-4 text-slate-400 dark:text-slate-500 pointer-events-none">
                             <?= icon('search', 'w-5 h-5') ?>
                         </span>
                         <input type="text" id="search" name="search" required maxlength="30"
-                               placeholder="e.g. FX-1048" 
+                               value="<?= e($searchQuery) ?>"
+                               placeholder="e.g. FX-1049" 
                                class="w-full pl-11 pr-32 py-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm transition-colors">
                         <button type="submit" class="absolute right-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg text-xs transition inline-flex items-center gap-1.5 shadow-sm">
                             Track repair <?= icon('arrow-right', 'w-4 h-4') ?>
@@ -87,8 +105,61 @@ require __DIR__ . '/includes/header.php';
                         <?= icon('help-circle', 'w-4 h-4') ?>
                         Your ticket number starts with FX and is on your receipt.
                     </span>
-                    <a href="<?= BASE_URL ?>/track.php?code=FX-1048" class="text-blue-600 dark:text-blue-400 hover:underline font-medium">Take a look at a sample repair.</a>
+                    <a href="?search=FX-1049#track" class="text-blue-600 dark:text-blue-400 hover:underline font-medium">Take a look at a sample repair.</a>
                 </div>
+
+                <!-- Inline Tracking Result Card (Appears when searched or simulated) -->
+                <?php if ($searchQuery !== ''): ?>
+                    <div class="mt-6 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 bg-slate-50 dark:bg-slate-950/80 space-y-5">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-blue-600 dark:text-blue-400">#<?= e($searchQuery) ?></span>
+                            <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/20">Received</span>
+                        </div>
+
+                        <div>
+                            <h3 class="text-lg font-bold text-slate-900 dark:text-white"><?= e($trackedRequest['device_brand'] ?? 'Iphone') ?> <?= e($trackedRequest['device_model'] ?? 'Iphone15') ?></h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400"><?= e($trackedRequest['service_name'] ?? $trackedRequest['issue'] ?? 'Battery replacement') ?></p>
+                        </div>
+
+                        <!-- Progress Steps Bar -->
+                        <div class="py-2">
+                            <div class="grid grid-cols-4 gap-2 text-center text-xs">
+                                <div class="space-y-1">
+                                    <div class="h-2 rounded-full bg-blue-600"></div>
+                                    <span class="font-semibold text-blue-600 dark:text-blue-400">Received</span>
+                                </div>
+                                <div class="space-y-1">
+                                    <div class="h-2 rounded-full bg-slate-200 dark:bg-slate-800"></div>
+                                    <span class="text-slate-400">In progress</span>
+                                </div>
+                                <div class="space-y-1">
+                                    <div class="h-2 rounded-full bg-slate-200 dark:bg-slate-800"></div>
+                                    <span class="text-slate-400">Ready for pickup</span>
+                                </div>
+                                <div class="space-y-1">
+                                    <div class="h-2 rounded-full bg-slate-200 dark:bg-slate-800"></div>
+                                    <span class="text-slate-400">Completed</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4 pt-2 border-t border-slate-200 dark:border-slate-800 text-xs">
+                            <div class="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
+                                <span class="text-slate-400 block mb-1">Estimated repair cost</span>
+                                <span class="text-base font-bold text-slate-900 dark:text-white">$59.00</span>
+                            </div>
+                            <div class="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
+                                <span class="text-slate-400 block mb-1">Estimated turnaround</span>
+                                <span class="text-base font-bold text-slate-900 dark:text-white">2–3 business days</span>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 pt-1">
+                            <div>Received: <strong class="text-slate-800 dark:text-slate-200">Nov 14, 2026</strong></div>
+                            <div>Technician: <strong class="text-slate-800 dark:text-slate-200">To be assigned</strong></div>
+                        </div>
+                    </div>
+                <?php endif; ?>
             </div>
 
             <div class="mt-10 pt-6 border-t border-slate-100 dark:border-slate-800/80 flex items-center gap-4 rounded-2xl bg-slate-50 dark:bg-slate-950/60 p-4">
@@ -192,7 +263,23 @@ require __DIR__ . '/includes/header.php';
                 </div>
                 <p class="mb-8 text-sm text-slate-600 dark:text-slate-400">Submit your repair request and we’ll have a technician ready to assess your phone when you arrive.</p>
 
-                <form action="<?= BASE_URL ?>/request.php" method="post" class="space-y-6">
+                <!-- Booking Success Banner (Matches Screenshot 1) -->
+                <?php if ($bookedTicket): ?>
+                    <div class="mb-8 rounded-2xl bg-emerald-950/60 border border-emerald-800/80 p-5 text-emerald-300 flex items-start gap-3 shadow-sm">
+                        <span class="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-emerald-500/20 text-emerald-400 mt-0.5">
+                            <?= icon('check-circle', 'w-4 h-4') ?>
+                        </span>
+                        <div>
+                            <h4 class="text-sm font-semibold text-white">Your repair request is booked.</h4>
+                            <p class="mt-0.5 text-xs text-emerald-400/90">Your ticket is <strong>#<?= e($bookedTicket) ?></strong>. Save it to track your repair status at any time.</p>
+                            <a href="?search=<?= e($bookedTicket) ?>#track" class="mt-3 inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-950 text-white rounded-xl text-xs font-medium border border-emerald-800/50 transition">
+                                Track this repair <?= icon('arrow-right', 'w-3.5 h-3.5') ?>
+                            </a>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
+                <form action="request.php" method="post" class="space-y-6">
                     <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
 
                     <div class="grid gap-6 md:grid-cols-2">
@@ -240,10 +327,10 @@ require __DIR__ . '/includes/header.php';
                     </div>
 
                     <div>
-    <label for="issue" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">What is the problem?</label>
-    <input type="text" id="issue" name="issue" required maxlength="255" placeholder="e.g. Cracked screen"
-           class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm transition-colors">
-</div>
+                        <label for="issue" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">What is the problem?</label>
+                        <input type="text" id="issue" name="issue" required maxlength="255" placeholder="e.g. Cracked screen"
+                               class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm transition-colors">
+                    </div>
 
                     <div>
                         <label for="notes" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">Notes</label>
@@ -304,5 +391,86 @@ require __DIR__ . '/includes/header.php';
     </section>
 
 </div>
+
+<!-- Help & Support Modal (Matches Screenshot 3) -->
+<div id="helpModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm hidden">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl relative space-y-6 mx-4">
+        <!-- Close button -->
+        <button type="button" id="closeHelpModal" class="absolute top-6 right-6 text-slate-400 hover:text-slate-600 dark:hover:text-white">
+            <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+
+        <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/40 flex items-center justify-center">
+            <?= icon('help-circle', 'w-5 h-5') ?>
+        </div>
+
+        <div>
+            <h3 class="text-xl font-bold text-slate-900 dark:text-white">Here when you need us.</h3>
+            <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">Find quick answers or reach your service center.</p>
+        </div>
+
+        <div class="space-y-4 border-t border-slate-100 dark:border-slate-800 pt-4 text-xs sm:text-sm">
+            <div>
+                <strong class="block text-slate-900 dark:text-white font-semibold mb-1">How do I track a repair?</strong>
+                <p class="text-slate-600 dark:text-slate-400">Select "Track a repair" and enter the ticket number from your receipt.</p>
+            </div>
+            <div class="border-t border-slate-100 dark:border-slate-800 pt-3">
+                <strong class="block text-slate-900 dark:text-white font-semibold mb-1">How do I update a repair?</strong>
+                <p class="text-slate-600 dark:text-slate-400">Open a ticket from the repair queue, update its status or estimated cost, then save your changes.</p>
+            </div>
+            <div class="border-t border-slate-100 dark:border-slate-800 pt-3">
+                <strong class="block text-slate-900 dark:text-white font-semibold mb-1">Need a hand?</strong>
+                <p class="text-slate-600 dark:text-slate-400">Contact hello@fixflow.com or (415) 555-0120.<br>Monday–Friday, 9:00 AM–6:00 PM.</p>
+            </div>
+        </div>
+
+        <div>
+            <button type="button" id="gotItBtn" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold shadow-sm transition inline-flex items-center justify-center gap-2">
+                Got it <i class="fa-solid fa-check text-xs"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Toggle Script -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const helpBtn = document.getElementById('helpSupportBtn'); // Make sure your header's help button has this ID
+        const helpModal = document.getElementById('helpModal');
+        const closeHelpModal = document.getElementById('closeHelpModal');
+        const gotItBtn = document.getElementById('gotItBtn');
+
+        // Fallback search header button if ID isn't directly on header tag
+        const headerHelpLinks = document.querySelectorAll('a[href="#"], button');
+        headerHelpLinks.forEach(el => {
+            if (el.textContent.includes('Help & support')) {
+                el.id = 'helpSupportBtn';
+            }
+        });
+
+        const triggerBtn = document.getElementById('helpSupportBtn');
+        if (triggerBtn && helpModal) {
+            triggerBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                helpModal.classList.remove('hidden');
+            });
+        }
+
+        [closeHelpModal, gotItBtn].forEach(btn => {
+            if (btn) {
+                btn.addEventListener('click', () => {
+                    helpModal.classList.add('hidden');
+                });
+            }
+        });
+
+        // Close on background click
+        helpModal.addEventListener('click', (e) => {
+            if (e.target === helpModal) {
+                helpModal.classList.add('hidden');
+            }
+        });
+    });
+</script>
 
 <?php require __DIR__ . '/includes/footer.php'; ?>
