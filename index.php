@@ -108,59 +108,89 @@ require __DIR__ . '/includes/header.php';
                     <a href="?search=FX-1049#track" class="text-blue-600 dark:text-blue-400 hover:underline font-medium">Take a look at a sample repair.</a>
                 </div>
 
-                <!-- Inline Tracking Result Card (Appears when searched or simulated) -->
-                <?php if ($searchQuery !== ''): ?>
-                    <div class="mt-6 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 bg-slate-50 dark:bg-slate-950/80 space-y-5">
-                        <div class="flex items-center justify-between">
-                            <span class="text-xs font-semibold text-blue-600 dark:text-blue-400">#<?= e($searchQuery) ?></span>
-                            <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/20">Received</span>
-                        </div>
-
-                        <div>
-                            <h3 class="text-lg font-bold text-slate-900 dark:text-white"><?= e($trackedRequest['device_brand'] ?? 'Iphone') ?> <?= e($trackedRequest['device_model'] ?? 'Iphone15') ?></h3>
-                            <p class="text-xs text-slate-500 dark:text-slate-400"><?= e($trackedRequest['service_name'] ?? $trackedRequest['issue'] ?? 'Battery replacement') ?></p>
-                        </div>
-
-                        <!-- Progress Steps Bar -->
-                        <div class="py-2">
-                            <div class="grid grid-cols-4 gap-2 text-center text-xs">
-                                <div class="space-y-1">
-                                    <div class="h-2 rounded-full bg-blue-600"></div>
-                                    <span class="font-semibold text-blue-600 dark:text-blue-400">Received</span>
-                                </div>
-                                <div class="space-y-1">
-                                    <div class="h-2 rounded-full bg-slate-200 dark:bg-slate-800"></div>
-                                    <span class="text-slate-400">In progress</span>
-                                </div>
-                                <div class="space-y-1">
-                                    <div class="h-2 rounded-full bg-slate-200 dark:bg-slate-800"></div>
-                                    <span class="text-slate-400">Ready for pickup</span>
-                                </div>
-                                <div class="space-y-1">
-                                    <div class="h-2 rounded-full bg-slate-200 dark:bg-slate-800"></div>
-                                    <span class="text-slate-400">Completed</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-4 pt-2 border-t border-slate-200 dark:border-slate-800 text-xs">
-                            <div class="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
-                                <span class="text-slate-400 block mb-1">Estimated repair cost</span>
-                                <span class="text-base font-bold text-slate-900 dark:text-white">$59.00</span>
-                            </div>
-                            <div class="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
-                                <span class="text-slate-400 block mb-1">Estimated turnaround</span>
-                                <span class="text-base font-bold text-slate-900 dark:text-white">2–3 business days</span>
-                            </div>
-                        </div>
-
-                        <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 pt-1">
-                            <div>Received: <strong class="text-slate-800 dark:text-slate-200">Nov 14, 2026</strong></div>
-                            <div>Technician: <strong class="text-slate-800 dark:text-slate-200">To be assigned</strong></div>
-                        </div>
-                    </div>
-                <?php endif; ?>
+<!-- Inline Tracking Result Card (Matching your desired design) -->
+<?php if ($searchQuery !== ''): ?>
+    <div class="mt-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6 transition-colors duration-200">
+        
+        <!-- Header: Code & Badge -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-100 dark:border-slate-800">
+            <div>
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Request Code</span>
+                <h2 class="text-xl font-bold text-slate-900 dark:text-white"><?= e($trackedRequest['request_code'] ?? $searchQuery) ?></h2>
             </div>
+            <div>
+                <?php 
+                $status = $trackedRequest['status'] ?? 'In Progress';
+                $statusClass = match($status) {
+                    'Completed' => 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900',
+                    'In Progress' => 'bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-900',
+                    'Ready for pickup' => 'bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-900',
+                    default => 'bg-purple-50 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400 border-purple-200 dark:border-purple-900'
+                };
+                ?>
+                <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold border <?= $statusClass ?>">
+                    <?= e($status) ?>
+                </span>
+            </div>
+        </div>
+
+        <!-- Device & Service Title -->
+        <div>
+            <h3 class="text-lg font-bold text-slate-900 dark:text-white"><?= e(($trackedRequest['device_brand'] ?? 'Apple') . ' ' . ($trackedRequest['device_model'] ?? 'iPhone 14 Pro')) ?></h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5"><?= e($trackedRequest['service_name'] ?? $trackedRequest['issue'] ?? 'Screen replacement') ?></p>
+        </div>
+
+        <!-- 4-Step Progress Bar -->
+        <div class="py-4">
+            <div class="grid grid-cols-4 gap-2 text-center text-xs">
+                <!-- Step 1: Received -->
+                <div class="space-y-2">
+                    <div class="h-2 rounded-full bg-blue-600"></div>
+                    <span class="font-semibold text-blue-600 dark:text-blue-400 block">Received</span>
+                </div>
+                <!-- Step 2: In progress -->
+                <div class="space-y-2">
+                    <div class="h-2 rounded-full bg-blue-600"></div>
+                    <span class="font-semibold text-blue-600 dark:text-blue-400 block">In progress</span>
+                </div>
+                <!-- Step 3: Ready for pickup -->
+                <div class="space-y-2">
+                    <div class="h-2 rounded-full bg-slate-200 dark:bg-slate-800"></div>
+                    <span class="text-slate-400 dark:text-slate-500 block">Ready for pickup</span>
+                </div>
+                <!-- Step 4: Completed -->
+                <div class="space-y-2">
+                    <div class="h-2 rounded-full bg-slate-200 dark:bg-slate-800"></div>
+                    <span class="text-slate-400 dark:text-slate-500 block">Completed</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cost & Turnaround Grid Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="bg-slate-50 dark:bg-slate-950/60 p-4 rounded-2xl border border-slate-200 dark:border-slate-800">
+                <span class="text-xs text-slate-400 dark:text-slate-500 block mb-1">Estimated repair cost</span>
+                <span class="text-xl font-bold text-slate-900 dark:text-white">$189.00</span>
+            </div>
+            <div class="bg-slate-50 dark:bg-slate-950/60 p-4 rounded-2xl border border-slate-200 dark:border-slate-800">
+                <span class="text-xs text-slate-400 dark:text-slate-500 block mb-1">Estimated turnaround</span>
+                <span class="text-xl font-bold text-slate-900 dark:text-white">2–3 business days</span>
+            </div>
+        </div>
+
+        <!-- Meta Info (Submitted & Technician) -->
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pt-2 text-xs text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-slate-800">
+            <div>Received: <strong class="text-slate-800 dark:text-slate-200"><?= e($trackedRequest['created_at'] ?? 'Jun 12, 2025') ?></strong></div>
+            <div>Your technician: <strong class="text-slate-800 dark:text-slate-200">Alex Morgan</strong></div>
+        </div>
+
+        <!-- Status Message Banner -->
+        <div class="bg-blue-50/60 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/40 rounded-2xl p-4 flex items-center gap-3 text-xs text-blue-700 dark:text-blue-300">
+            <i class="fa-regular fa-circle-question text-base shrink-0"></i>
+            <span>Your technician is working on your device. Check back here for the latest status.</span>
+        </div>
+    </div>
+<?php endif; ?>
 
             <div class="mt-10 pt-6 border-t border-slate-100 dark:border-slate-800/80 flex items-center gap-4 rounded-2xl bg-slate-50 dark:bg-slate-950/60 p-4">
                 <span class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/40">
@@ -435,26 +465,20 @@ require __DIR__ . '/includes/header.php';
 <!-- Modal Toggle Script -->
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        const helpBtn = document.getElementById('helpSupportBtn'); // Make sure your header's help button has this ID
+        const helpBtn = document.getElementById('helpSupportBtn');
+        const mobileHelpBtn = document.getElementById('mobileHelpBtn');
         const helpModal = document.getElementById('helpModal');
         const closeHelpModal = document.getElementById('closeHelpModal');
         const gotItBtn = document.getElementById('gotItBtn');
 
-        // Fallback search header button if ID isn't directly on header tag
-        const headerHelpLinks = document.querySelectorAll('a[href="#"], button');
-        headerHelpLinks.forEach(el => {
-            if (el.textContent.includes('Help & support')) {
-                el.id = 'helpSupportBtn';
+        [helpBtn, mobileHelpBtn].forEach(btn => {
+            if (btn && helpModal) {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    helpModal.classList.remove('hidden');
+                });
             }
         });
-
-        const triggerBtn = document.getElementById('helpSupportBtn');
-        if (triggerBtn && helpModal) {
-            triggerBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                helpModal.classList.remove('hidden');
-            });
-        }
 
         [closeHelpModal, gotItBtn].forEach(btn => {
             if (btn) {
@@ -464,12 +488,14 @@ require __DIR__ . '/includes/header.php';
             }
         });
 
-        // Close on background click
-        helpModal.addEventListener('click', (e) => {
-            if (e.target === helpModal) {
-                helpModal.classList.add('hidden');
-            }
-        });
+        // Close on background backdrop click
+        if (helpModal) {
+            helpModal.addEventListener('click', (e) => {
+                if (e.target === helpModal) {
+                    helpModal.classList.add('hidden');
+                }
+            });
+        }
     });
 </script>
 
