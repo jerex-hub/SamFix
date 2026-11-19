@@ -1,6 +1,6 @@
 <?php
 // request.php: Submit Repair Request (FR-02 to FR-05)
-// Design unchanged. Only the logic at the top was fixed so bookings save correctly.
+// Form redesigned to match the "Online Booking" card. Save logic unchanged.
 require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/helpers.php';
@@ -13,6 +13,14 @@ $activeNav = 'book';
 $error = null;
 $successCode = null;
 $ticket = null;   // summary shown on the confirmation card
+
+// Load the services for the "Repair type" dropdown
+$services = [];
+try {
+    $services = $pdo->query('SELECT service_id, service_name FROM services ORDER BY service_name')->fetchAll();
+} catch (PDOException $e) {
+    error_log('request.php services load failed: ' . $e->getMessage());
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // 1. Verify CSRF token
@@ -32,17 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $deviceModel  = $get('device_model');
         $notes        = $get('notes');
         $serviceIdRaw = $get('service_id');
-
-        // This page sends "issue_description"; the home page form sends "issue"
-        $issueDesc = $get('issue_description');
-        if ($issueDesc === '') {
-            $issueDesc = $get('issue');
-        }
-
-        // The database needs a brand; this page has no brand field, so use a default
-        if ($deviceBrand === '') {
-            $deviceBrand = 'Not specified';
-        }
+        $issueDesc    = $get('issue');   // "What is the problem?"
 
         // "issue" holds up to 255 characters; a longer description is kept in full in notes
         $issue = mb_substr($issueDesc, 0, 255);
@@ -115,7 +113,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $successCode = $code;
                 $ticket = [
                     'name'   => $customerName,
-                    'device' => trim(($deviceBrand !== 'Not specified' ? $deviceBrand . ' ' : '') . $deviceModel),
+                    'device' => trim($deviceBrand . ' ' . $deviceModel),
                     'issue'  => $issue,
                     'date'   => date('M j, Y g:i A'),
                 ];
@@ -130,17 +128,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+// Shared input styling
+$inputCls = 'w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-blue-500 text-sm transition';
+$labelCls = 'block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2';
+
 require_once __DIR__ . '/includes/header.php';
 ?>
 
 <div class="max-w-2xl mx-auto py-8">
-    <!-- Page Header -->
-    <div class="text-center mb-10">
-        <h1 class="text-3xl font-bold tracking-tight text-slate-900 dark:text-white mb-3">Book a Device Repair</h1>
-        <p class="text-slate-600 dark:text-slate-400 text-sm max-w-md mx-auto">
-            Fill out the details below to submit your device for diagnostics and repair. We will follow up with you shortly.
-        </p>
-    </div>
 
     <?php if ($successCode): ?>
         <!-- Success Confirmation Card -->
@@ -165,7 +160,7 @@ require_once __DIR__ . '/includes/header.php';
                     <div class="flex justify-between gap-4"><dt>Name</dt><dd class="font-medium text-slate-900 dark:text-white text-right"><?= e($ticket['name']) ?></dd></div>
                     <div class="flex justify-between gap-4"><dt>Device</dt><dd class="font-medium text-slate-900 dark:text-white text-right"><?= e($ticket['device']) ?></dd></div>
                     <div class="flex justify-between gap-4"><dt>Issue</dt><dd class="font-medium text-slate-900 dark:text-white text-right"><?= e($ticket['issue']) ?></dd></div>
-                    <div class="flex justify-between gap-4"><dt>Status</dt><dd class="font-medium text-slate-900 dark:text-white text-right">Pending</dd></div>
+                    <div class="flex justify-between gap-4"><dt>Status</dt><dd class="font-medium text-slate-900 dark:text-white text-right">Received</dd></div>
                     <div class="flex justify-between gap-4"><dt>Submitted</dt><dd class="font-medium text-slate-900 dark:text-white text-right"><?= e($ticket['date']) ?></dd></div>
                 </dl>
             <?php endif; ?>
@@ -181,53 +176,95 @@ require_once __DIR__ . '/includes/header.php';
         </div>
     <?php else: ?>
 
-        <!-- Error Alert -->
-        <?php if ($error): ?>
-            <div class="p-4 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 rounded-xl text-red-700 dark:text-red-400 text-sm text-center mb-6">
-                <?= e($error) ?>
-            </div>
-        <?php endif; ?>
-
         <!-- Booking Form Card -->
-        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 sm:p-8 shadow-sm transition-colors duration-200">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-sm transition-colors duration-200">
+
+            <!-- Card header -->
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-11 h-11 shrink-0 flex items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-950/50 border border-blue-100 dark:border-blue-900/50 text-blue-600 dark:text-blue-400">
+                    <i class="fa-regular fa-calendar"></i>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400">Online booking</p>
+                    <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Tell us what needs fixing.</h1>
+                </div>
+            </div>
+
+            <p class="text-sm text-slate-600 dark:text-slate-400 mb-8">
+                Submit your repair request and we’ll have a technician ready to assess your phone when you arrive.
+            </p>
+
+            <!-- Error Alert -->
+            <?php if ($error): ?>
+                <div class="p-4 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 rounded-xl text-red-700 dark:text-red-400 text-sm text-center mb-6">
+                    <?= e($error) ?>
+                </div>
+            <?php endif; ?>
+
             <form method="POST" action="request.php" class="space-y-6">
                 <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
 
+                <!-- Full name / Email -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">Full Name</label>
-                        <input type="text" name="customer_name" value="<?= e($_POST['customer_name'] ?? '') ?>" required placeholder="e.g. Juan Dela Cruz"
-                               class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-blue-500 text-sm transition">
+                        <label for="customer_name" class="<?= $labelCls ?>">Full name</label>
+                        <input type="text" id="customer_name" name="customer_name" value="<?= e($_POST['customer_name'] ?? '') ?>" required placeholder="e.g. Jordan Lee" class="<?= $inputCls ?>">
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">Email Address</label>
-                        <input type="email" name="email" value="<?= e($_POST['email'] ?? '') ?>" required placeholder="e.g. juan@example.com"
-                               class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-blue-500 text-sm transition">
+                        <label for="email" class="<?= $labelCls ?>">Email address</label>
+                        <input type="email" id="email" name="email" value="<?= e($_POST['email'] ?? '') ?>" required placeholder="you@email.com" class="<?= $inputCls ?>">
                     </div>
                 </div>
 
+                <!-- Phone number / Phone brand -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">Phone Number</label>
-                        <input type="text" name="phone" value="<?= e($_POST['phone'] ?? '') ?>" required placeholder="e.g. 09123456789"
-                               class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-blue-500 text-sm transition">
+                        <label for="phone" class="<?= $labelCls ?>">Phone number</label>
+                        <input type="text" id="phone" name="phone" value="<?= e($_POST['phone'] ?? '') ?>" required placeholder="(415) 555-0120" class="<?= $inputCls ?>">
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">Device Model / Type</label>
-                        <input type="text" name="device_model" value="<?= e($_POST['device_model'] ?? '') ?>" required placeholder="e.g. Tecno Camon 18 / Laptop / Custom PC"
-                               class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-blue-500 text-sm transition">
+                        <label for="device_brand" class="<?= $labelCls ?>">Phone brand</label>
+                        <input type="text" id="device_brand" name="device_brand" value="<?= e($_POST['device_brand'] ?? '') ?>" required placeholder="e.g. Apple, Samsung" class="<?= $inputCls ?>">
                     </div>
                 </div>
 
+                <!-- Phone model / Repair type -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div>
+                        <label for="device_model" class="<?= $labelCls ?>">Phone model</label>
+                        <input type="text" id="device_model" name="device_model" value="<?= e($_POST['device_model'] ?? '') ?>" required placeholder="e.g. iPhone 15 Pro" class="<?= $inputCls ?>">
+                    </div>
+                    <div>
+                        <label for="service_id" class="<?= $labelCls ?>">Repair type</label>
+                        <select id="service_id" name="service_id" class="<?= $inputCls ?>">
+                            <option value="">Select a repair</option>
+                            <?php foreach ($services as $s):
+                                $sid   = (int) $s['service_id'];
+                                $sname = $s['service_name'];
+                            ?>
+                                <option value="<?= $sid ?>" <?= ((string) ($_POST['service_id'] ?? '') === (string) $sid) ? 'selected' : '' ?>>
+                                    <?= e($sname) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- What is the problem? -->
                 <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">Describe the Issue</label>
-                    <textarea name="issue_description" rows="4" required placeholder="Please describe the hardware malfunction, symptoms, or service needed..."
-                              class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-blue-500 text-sm transition"><?= e($_POST['issue_description'] ?? '') ?></textarea>
+                    <label for="issue" class="<?= $labelCls ?>">What is the problem?</label>
+                    <input type="text" id="issue" name="issue" value="<?= e($_POST['issue'] ?? '') ?>" required maxlength="255" placeholder="e.g. Cracked screen" class="<?= $inputCls ?>">
                 </div>
 
-                <button type="submit" class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition text-sm shadow-sm flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-paper-plane text-xs"></i>
-                    <span>Submit repair request</span>
+                <!-- Notes -->
+                <div>
+                    <label for="notes" class="<?= $labelCls ?>">Notes</label>
+                    <textarea id="notes" name="notes" rows="4" placeholder="Describe the issue, damage, or anything our technician should know." class="<?= $inputCls ?>"><?= e($_POST['notes'] ?? '') ?></textarea>
+                </div>
+
+                <button type="submit" class="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition text-sm shadow-sm">
+                    <span>Submit repair order</span>
+                    <i class="fa-solid fa-arrow-right text-xs"></i>
                 </button>
             </form>
         </div>

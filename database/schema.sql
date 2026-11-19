@@ -1,9 +1,12 @@
+-- schema.sql
 CREATE DATABASE IF NOT EXISTS samfix
   CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE samfix;
 
 -- Drop in reverse dependency order so the script can be rerun during development
+-- WARNING: this deletes all data. Use migration.sql instead on a database that already has real data.
 DROP TABLE IF EXISTS repair_requests;
+DROP TABLE IF EXISTS technicians;
 DROP TABLE IF EXISTS services;
 DROP TABLE IF EXISTS administrators;
 
@@ -20,23 +23,33 @@ CREATE TABLE services (
   base_price   DECIMAL(10,2) NOT NULL DEFAULT 0.00
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE technicians (
+  technician_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  full_name     VARCHAR(100) NOT NULL,
+  email         VARCHAR(100) NOT NULL DEFAULT '',
+  is_active     TINYINT(1)   NOT NULL DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE repair_requests (
-  request_id    INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  request_code  VARCHAR(30)  NOT NULL UNIQUE,
-  service_id    INT UNSIGNED NULL,
-  updated_by    INT UNSIGNED NULL,
-  customer_name VARCHAR(100) NOT NULL,
-  email         VARCHAR(100) NOT NULL,
-  phone         VARCHAR(20)  NOT NULL,
-  device_brand  VARCHAR(50)  NOT NULL,
-  device_model  VARCHAR(50)  NOT NULL,
-  issue         VARCHAR(255) NOT NULL,
-  notes         TEXT NULL,
-  status        ENUM('Pending','In Progress','Completed','Cancelled')
-                NOT NULL DEFAULT 'Pending',
-  created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  request_id     INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  request_code   VARCHAR(30)  NOT NULL UNIQUE,
+  service_id     INT UNSIGNED NULL,
+  technician_id  INT UNSIGNED NULL,
+  updated_by     INT UNSIGNED NULL,
+  customer_name  VARCHAR(100) NOT NULL,
+  email          VARCHAR(100) NOT NULL,
+  phone          VARCHAR(20)  NOT NULL,
+  device_brand   VARCHAR(50)  NOT NULL,
+  device_model   VARCHAR(50)  NOT NULL,
+  issue          VARCHAR(255) NOT NULL,
+  notes          TEXT NULL,
+  estimated_cost DECIMAL(10,2) NULL,
+  status         ENUM('Pending','In Progress','Ready for pickup','Completed','Cancelled')
+                 NOT NULL DEFAULT 'Pending',
+  created_at     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_phone (phone),
   INDEX idx_status (status),
-  FOREIGN KEY (service_id) REFERENCES services(service_id) ON DELETE SET NULL,
-  FOREIGN KEY (updated_by) REFERENCES administrators(admin_id) ON DELETE SET NULL
+  FOREIGN KEY (service_id)    REFERENCES services(service_id)       ON DELETE SET NULL,
+  FOREIGN KEY (technician_id) REFERENCES technicians(technician_id) ON DELETE SET NULL,
+  FOREIGN KEY (updated_by)    REFERENCES administrators(admin_id)   ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
