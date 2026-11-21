@@ -13,8 +13,9 @@ const STATUSES = ['Pending', 'In Progress', 'Ready for pickup', 'Completed', 'Ca
 
 // Shop details shown on the home page (edit these to your real shop info)
 const SHOP_NAME       = 'SamFix Service Center';
-const SHOP_ADDRESS    = 'Your street address, City, Province';
+const SHOP_ADDRESS    = 'Poblacion, Claveria, Misamis Oriental, Philippines';
+const SHOP_AREA       = 'Poblacion, Claveria, Misamis Oriental, Philippines'; 
 const SHOP_HOURS      = ['Monday to Friday · 9 AM to 6 PM', 'Saturday · 10 AM to 4 PM'];
-const SHOP_PHONE      = '0900 000 0000';
-const SHOP_EMAIL      = 'hello@samfix.example';
+const SHOP_PHONE      = '09682215995';
+const SHOP_EMAIL      = 'samfix@gmail.com';
 const SHOP_TURNAROUND = '2–3 business days';

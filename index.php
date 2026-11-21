@@ -16,6 +16,7 @@ $cur       = '₱';   // same currency as the admin dashboard
 $shop = [
     'name'       => defined('SHOP_NAME') ? SHOP_NAME : 'Downtown Service Center',
     'address'    => defined('SHOP_ADDRESS') ? SHOP_ADDRESS : '214 Market Street, San Francisco, CA 94105',
+    'area'       => defined('SHOP_AREA') ? SHOP_AREA : 'View on map',
     'phone'      => defined('SHOP_PHONE') ? SHOP_PHONE : '(415) 555-0120',
     'email'      => defined('SHOP_EMAIL') ? SHOP_EMAIL : 'hello@fixflow.com',
     'hours'      => (defined('SHOP_HOURS') && is_array(SHOP_HOURS)) ? SHOP_HOURS : ['Monday–Friday · 9 AM–6 PM', 'Saturday · 10 AM–4 PM'],
@@ -113,7 +114,7 @@ require __DIR__ . '/includes/header.php';
     </section>
 
     <!-- Track + team contact -->
-    <section id="track" class="grid grid-cols-1 lg:grid-cols-12 gap-8 scroll-mt-24">
+    <section id="track" class="grid grid-cols-1 lg:grid-cols-12 lg:items-start gap-8 scroll-mt-24">
 
         <div class="lg:col-span-7 <?= $card ?> rounded-3xl p-6 sm:p-8 shadow-sm flex flex-col justify-between">
             <div class="space-y-6">
@@ -127,7 +128,7 @@ require __DIR__ . '/includes/header.php';
                     <label for="search" class="sr-only">Ticket number</label>
                     <div class="relative flex items-center">
                         <span class="absolute left-4 text-slate-400 dark:text-slate-500 pointer-events-none"><?= icon('search', 'w-5 h-5') ?></span>
-                        <input type="text" id="search" name="search" required maxlength="30" value="<?= e($searchQuery) ?>" placeholder="e.g. SFX-1049"
+                        <input type="text" id="search" name="search" required maxlength="30" value="<?= e($searchQuery) ?>" placeholder="e.g. SFX-2641"
                                class="<?= $field ?> pl-11 pr-36 py-3.5">
                         <button type="submit" class="absolute right-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg text-xs transition inline-flex items-center gap-1.5 shadow-sm">
                             Track repair <?= icon('arrow-right', 'w-4 h-4') ?>
@@ -220,7 +221,7 @@ require __DIR__ . '/includes/header.php';
                     <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">Have a question about your repair? We’re always happy to help.</p>
                 </div>
                 <ul class="space-y-4 text-sm text-slate-600 dark:text-slate-300">
-                    <li class="flex items-start gap-3"><span class="mt-0.5 text-slate-400"><?= icon('box', 'w-5 h-5') ?></span>
+                    <li class="flex items-center gap-3"><span class="text-slate-400"><?= icon('box', 'w-5 h-5') ?></span>
                         <div><strong class="block text-slate-900 dark:text-white"><?= e($shop['name']) ?></strong><span class="text-xs text-slate-500 dark:text-slate-400"><?= e($shop['hours'][0] ?? '') ?></span></div></li>
                     <li class="flex items-center gap-3"><span class="text-slate-400"><?= icon('mail', 'w-5 h-5') ?></span><span><?= e($shop['email']) ?></span></li>
                     <li class="flex items-center gap-3"><span class="text-slate-400"><?= icon('phone', 'w-5 h-5') ?></span><span><?= e($shop['phone']) ?></span></li>
@@ -304,11 +305,13 @@ require __DIR__ . '/includes/header.php';
                             <input type="<?= $type ?>" id="<?= $id ?>" name="<?= $id ?>" required maxlength="<?= $max ?>" placeholder="<?= e($ph) ?>" class="<?= $field ?>"></div>
                         <?php endforeach; ?>
                         <div><label for="service_id" class="<?= $label ?>">Repair type</label>
-                            <select id="service_id" name="service_id" class="<?= $field ?>">
-                                <option value="">Select a repair</option>
-                                <?php if (!$usingFallback) foreach ($services as $s): ?>
-                                <option value="<?= (int)$s['service_id'] ?>"><?= e($s['service_name']) ?></option>
-                                <?php endforeach; ?>
+                            <select id="service_id" name="service_id" required class="<?= str_replace('dark:bg-slate-950', 'dark:bg-slate-950', $field) ?>">
+    <option value="" disabled selected>Select a repair</option>
+    <?php if (!$usingFallback) foreach ($services as $s): ?>
+    <option value="<?= (int)$s['service_id'] ?>" class="bg-white text-slate-900 dark:bg-slate-950 dark:text-white"><?= e($s['service_name']) ?></option>
+    <?php endforeach; ?>
+    <option value="other" class="bg-white text-slate-900 dark:bg-slate-950 dark:text-white">Other repair</option>
+</select>
                             </select></div>
                     </div>
                     <div><label for="issue" class="<?= $label ?>">What is the problem?</label>
@@ -328,6 +331,11 @@ require __DIR__ . '/includes/header.php';
                     <h3 class="mt-1 text-xl font-bold text-slate-900 dark:text-white"><?= e($shop['name']) ?></h3>
                     <p class="mt-1 text-xs sm:text-sm text-slate-600 dark:text-slate-400"><?= e($shop['address']) ?></p>
                 </div>
+
+        <iframe title="Map of <?= e($shop['name']) ?>" loading="lazy"
+        class="h-40 w-full rounded-2xl border border-slate-200 dark:border-slate-800"
+        src="https://www.google.com/maps?q=<?= urlencode($shop['address']) ?>&output=embed"></iframe>
+
                 <div class="space-y-4 border-t border-slate-100 dark:border-slate-800 pt-4 text-xs">
                     <div><span class="block font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">Opening hours</span>
                         <?php foreach ($shop['hours'] as $h): ?><p class="font-medium text-slate-800 dark:text-slate-200"><?= e($h) ?></p><?php endforeach; ?></div>
