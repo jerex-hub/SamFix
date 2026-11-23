@@ -17,6 +17,3 @@ ALTER TABLE repair_requests
   ADD COLUMN estimated_cost DECIMAL(10,2) NULL AFTER notes,
   ADD CONSTRAINT fk_rr_technician FOREIGN KEY (technician_id)
       REFERENCES technicians(technician_id) ON DELETE SET NULL;
-
--- Optional sample technicians
-INSERT INTO technicians (full_name, email) VALUES ('Sam Abregana', 'sam@samfix.example'), ('Alex Reyes', 'alex@samfix.example');

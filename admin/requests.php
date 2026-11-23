@@ -1,5 +1,5 @@
 <?php
-// admin/requests.php: Fixflow design wired to the samfix database. Light theme by default, dark toggle.
+// admin/requests.php: SamFix design wired to the samfix database.
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/helpers.php';
@@ -35,7 +35,7 @@ function csv_safe($v): string { $v = (string)$v; return preg_match('/^[=+\-@]/',
 // ---------- CSV export ----------
 if (($_GET['export'] ?? '') === 'csv') {
     header('Content-Type: text/csv; charset=utf-8');
-    header('Content-Disposition: attachment; filename="samfix_repairs_' . date('Y-m-d') . '.csv"');
+    header('Content-Disposition: attachment; filename="SamFix_repairs_' . date('Y-m-d') . '.csv"');
     $out = fopen('php://output', 'w');
     fputcsv($out, ['Request Code', 'Customer', 'Email', 'Phone', 'Device', 'Service', 'Issue', 'Status', 'Base Price', 'Date Added']);
     $rows = $pdo->query('SELECT r.request_code, r.customer_name, r.email, r.phone, r.device_brand, r.device_model, r.issue, r.status, r.created_at, s.service_name, s.base_price
@@ -247,7 +247,7 @@ function render_table(array $jobs, int $active, string $p): void { ?>
       </tr></thead>
       <tbody class="text-xs">
       <?php if (!$jobs): ?>
-        <tr><td colspan="8" class="py-12 px-6 text-center t2">No repairs yet. Add one with “New repair”, or wait for a booking from <code>index.php</code>.</td></tr>
+        <tr><td colspan="8" class="py-12 px-6 text-center t2">No repairs yet. Add one with “New repair”, or wait for a booking.</td></tr>
       <?php else: foreach ($jobs as $j): ?>
         <tr class="row bd border-b" data-status="<?= e($j['status']) ?>" data-s="<?= e(strtolower($j['request_code'] . ' ' . $j['customer'] . ' ' . $j['email'] . ' ' . $j['phone'] . ' ' . $j['device'] . ' ' . $j['issue'] . ' ' . $j['tech'])) ?>">
           <td class="py-3.5 pl-6 pr-3"><input type="checkbox" class="rcb"></td>
@@ -298,22 +298,29 @@ function render_team(array $admins, array $techs, array $load): void { ?>
       </div>
     </div>
     <?php endforeach; ?>
-  </div>
-  <h3 class="text-xs font-semibold t1 mb-3">Add a team member</h3>
-  <form method="POST" data-teamform class="grid grid-cols-1 sm:grid-cols-[150px_1fr_1fr_auto] gap-3">
-    <?= csrf() ?>
-    <select name="action" aria-label="Role" class="inp border px-3 py-2 text-xs rounded-lg"><option value="add_technician">Technician</option><option value="add_admin">Administrator</option></select>
-    <input type="text" name="name" required maxlength="100" placeholder="Full name or username" autocomplete="off" class="inp border px-3.5 py-2 text-xs rounded-lg">
-    <input type="email" name="email" data-for="add_technician" required placeholder="Email address" class="inp border px-3.5 py-2 text-xs rounded-lg">
-    <input type="password" name="password" data-for="add_admin" required minlength="8" placeholder="Password (8+ characters)" autocomplete="new-password" class="inp border px-3.5 py-2 text-xs rounded-lg hidden" disabled>
-    <button type="submit" class="btn-p inline-flex items-center justify-center gap-1.5 text-xs font-medium px-4 py-2 rounded-lg">Add member <i data-lucide="plus" class="w-3.5 h-3.5"></i></button>
+    </div>
+
+    <h3 class="text-xs font-semibold t1 mb-3">Add a technician</h3>
+  <form method="POST" class="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-3 mb-6">
+    <?= csrf() ?><input type="hidden" name="action" value="add_technician">
+    <input type="text" name="name" required maxlength="100" placeholder="Full name" autocomplete="off" class="inp border px-3.5 py-2 text-xs rounded-lg">
+    <input type="email" name="email" required placeholder="Email address" class="inp border px-3.5 py-2 text-xs rounded-lg">
+    <button type="submit" class="btn-p inline-flex items-center justify-center gap-1.5 text-xs font-medium px-4 py-2 rounded-lg">Add technician <i data-lucide="plus" class="w-3.5 h-3.5"></i></button>
+  </form>
+
+  <h3 class="text-xs font-semibold t1 mb-3">Add an administrator</h3>
+  <form method="POST" class="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-3">
+    <?= csrf() ?><input type="hidden" name="action" value="add_admin">
+    <input type="text" name="name" required maxlength="50" placeholder="Username" autocomplete="off" class="inp border px-3.5 py-2 text-xs rounded-lg">
+    <input type="password" name="password" required minlength="8" placeholder="Password (8+ characters)" autocomplete="new-password" class="inp border px-3.5 py-2 text-xs rounded-lg">
+    <button type="submit" class="btn-p inline-flex items-center justify-center gap-1.5 text-xs font-medium px-4 py-2 rounded-lg">Add administrator <i data-lucide="plus" class="w-3.5 h-3.5"></i></button>
   </form>
 </div>
 <?php }
 
 function head(string $title, string $sub, string $btn = 'new'): void { ?>
 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-  <div><p class="text-[10px] font-semibold tracking-wider t3 uppercase mb-1">Administration · <span data-ws>Samfix Service Center</span></p>
+  <div><p class="text-[10px] font-semibold tracking-wider t3 uppercase mb-1">Administration · <span data-ws>SamFix Service Center</span></p>
     <h1 class="text-2xl font-bold t1"><?= $title ?></h1><p class="text-xs t2 mt-1"><?= $sub ?></p></div>
   <?php if ($btn === 'new'): ?><button onclick="openModal('new-modal')" class="btn-p inline-flex items-center justify-center gap-2 text-xs font-medium px-4 py-2.5 rounded-lg self-start sm:self-auto"><i data-lucide="plus" class="w-4 h-4"></i>New repair</button>
   <?php elseif ($btn === 'export'): ?><a href="?export=csv" class="btn-p inline-flex items-center justify-center gap-2 text-xs font-medium px-4 py-2.5 rounded-lg self-start sm:self-auto"><i data-lucide="download" class="w-4 h-4"></i>Export report</a><?php endif; ?>
@@ -333,7 +340,7 @@ function kpi(string $label, $value, string $note, string $icon, string $tone): v
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin dashboard - samfix.</title>
+<title>Admin dashboard - SamFix.</title>
 <script>try{if(localStorage.getItem('theme')==='dark')document.documentElement.classList.add('dark')}catch(e){}</script>
 <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
@@ -372,12 +379,12 @@ html.dark .tone-blue{background:#172554b3;color:#60a5fa}html.dark .tone-amber{ba
   <div class="p-5">
     <div class="flex items-center justify-between px-1 mb-6">
       <div class="flex items-center gap-2.5"><span class="btn-p w-8 h-8 rounded-lg flex items-center justify-center"><i data-lucide="wrench" class="w-4 h-4"></i></span>
-        <span class="text-xl font-bold tracking-tight t1">samfix<span class="acct">.</span></span></div>
+        <span class="text-xl font-bold tracking-tight t1">SamFix<span class="acct">.</span></span></div>
       <button onclick="toggleSidebar()" class="lg:hidden t2 p-1" aria-label="Close menu"><i data-lucide="x" class="w-5 h-5"></i></button>
     </div>
     <div class="card border rounded-xl p-2.5 mb-6 flex items-center gap-2.5">
       <span class="sub bd border w-8 h-8 rounded-lg flex items-center justify-center t2"><i data-lucide="box" class="w-4 h-4"></i></span>
-      <div class="min-w-0"><p class="text-xs font-semibold t1 truncate" data-ws>Samfix Service Center</p><p class="text-[11px] t2">Admin workspace</p></div>
+      <div class="min-w-0"><p class="text-xs font-semibold t1 truncate" data-ws>SamFix Service Center</p><p class="text-[11px] t2">Admin workspace</p></div>
     </div>
     <p class="px-3 text-[10px] font-semibold t3 uppercase tracking-wider mb-2">Workspace</p>
     <nav class="space-y-1 mb-6">
@@ -428,7 +435,7 @@ html.dark .tone-blue{background:#172554b3;color:#60a5fa}html.dark .tone-amber{ba
 
   <main class="flex-1 overflow-y-auto p-4 sm:p-8">
     <?php if (!$schemaOk): ?>
-    <div role="alert" class="tone-amber rounded-xl px-4 py-3 text-xs mb-6"><strong>Database update needed.</strong> Import <code>migration.sql</code> into the samfix database (phpMyAdmin → Import), then reload this page.</div>
+    <div role="alert" class="tone-amber rounded-xl px-4 py-3 text-xs mb-6"><strong>Database update needed.</strong> Import <code>migration.sql</code> into the SamFix database (phpMyAdmin → Import), then reload this page.</div>
     <?php endif; ?>
 
     <section id="view-dashboard" class="tab-view space-y-6">
@@ -532,7 +539,7 @@ html.dark .tone-blue{background:#172554b3;color:#60a5fa}html.dark .tone-amber{ba
       <?php head('Settings', 'Make this workspace work for you.', ''); ?>
       <form id="settings-form" class="card max-w-2xl border rounded-xl p-6 space-y-4 text-xs">
         <div><h2 class="text-sm font-semibold t1">Workspace settings</h2><p class="t2 mt-0.5">Saved in this browser only.</p></div>
-        <label class="block"><span class="font-medium t1 block mb-1.5">Service center name</span><input name="ws" value="Samfix Service Center" class="inp w-full border px-3.5 py-2.5 rounded-lg"></label>
+        <label class="block"><span class="font-medium t1 block mb-1.5">Service center name</span><input name="ws" value="SamFix Service Center" class="inp w-full border px-3.5 py-2.5 rounded-lg"></label>
         <label class="block"><span class="font-medium t1 block mb-1.5">Contact email</span><input name="mail" type="email" placeholder="hello@samfix.com" class="inp w-full border px-3.5 py-2.5 rounded-lg"></label>
         <label class="block"><span class="font-medium t1 block mb-1.5">Contact number</span><input name="tel" placeholder="(032) 555-0120" class="inp w-full border px-3.5 py-2.5 rounded-lg"></label>
         <label class="block"><span class="font-medium t1 block mb-1.5">Default repair turnaround</span>
@@ -542,7 +549,7 @@ html.dark .tone-blue{background:#172554b3;color:#60a5fa}html.dark .tone-amber{ba
     </section>
 
     <footer class="pt-8 pb-2 flex flex-col sm:flex-row items-center justify-between text-[11px] t3">
-      <p>© <?= date('Y') ?> Samfix. Built for better repairs.</p>
+      <p>© <?= date('Y') ?> SamFix. Built for better repairs.</p>
       <span class="flex items-center gap-1.5 mt-2 sm:mt-0"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Connected to database</span>
     </footer>
   </main>
@@ -720,7 +727,7 @@ $('#track-out').addEventListener('click', e => { const b = e.target.closest('[da
 /* Settings (browser-local) */
 const form = $('#settings-form'), saved = JSON.parse(store.get('ws') || '{}');
 for (const [k, v] of Object.entries(saved)) if (form.elements[k]) form.elements[k].value = v;
-function paintWs() { const n = (form.elements.ws.value || '').trim() || 'Samfix Service Center'; $$('[data-ws]').forEach(el => el.textContent = n); }
+function paintWs() { const n = (form.elements.ws.value || '').trim() || 'SamFix Service Center'; $$('[data-ws]').forEach(el => el.textContent = n); }
 form.addEventListener('submit', e => { e.preventDefault(); store.set('ws', JSON.stringify(Object.fromEntries(new FormData(form)))); paintWs(); $('#saved').classList.remove('hidden'); setTimeout(() => $('#saved').classList.add('hidden'), 2000); });
 
 /* Add-member form: the role decides which fields are needed */
