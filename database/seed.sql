@@ -13,3 +13,12 @@ INSERT INTO services (service_name, description, base_price) VALUES
 ('Water Damage Repair',     'Clean and restore a device that got wet.',                  1200.00),
 ('Software Reset & Update', 'Fix freezing, boot loops and failed updates.',               500.00),
 ('Camera Repair',           'Replace a broken front or rear camera.',                    1100.00);
+
+DELETE FROM administrators;
+DELETE FROM repair_requests;
+DELETE FROM technicians;
+
+SELECT * FROM administrators;
+SELECT * FROM repair_requests;
+SELECT * FROM services;
+SELECT * FROM technicians;
