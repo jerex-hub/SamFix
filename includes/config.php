@@ -3,7 +3,7 @@
 const DB_HOST = 'localhost';
 const DB_NAME = 'samfix';
 const DB_USER = 'root';
-const DB_PASS = 'abregana';   // empty '' only if your MySQL has no password
+const DB_PASS = 'abregana';   // usba lang ni if unsa pass sa inyo db
 
 // App settings
 const APP_NAME = 'SamFix';
