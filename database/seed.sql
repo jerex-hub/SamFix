@@ -3,7 +3,7 @@ USE samfix;
 -- First administrator
 -- Username: admin    Password: Admin@123   (change this after your first login)
 INSERT INTO administrators (username, password_hash) VALUES
-('admin', '$2y$12$6MpKz/yVQjqBnfhy9YTqeueAJEFKoaJSjZ4ggaWn.jNLUbBodNE3u');
+('jerex', '$2y$10$DKXHrasG19otpYgBGpwjE.Hu1wVdlDTOKhrv8ZfpJwOuNjLEBnemm'); 
 
 -- Sample services (edit names and prices to match your shop)
 INSERT INTO services (service_name, description, base_price) VALUES

@@ -72,7 +72,7 @@ require_once __DIR__ . '/includes/header.php';
                 <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                     <i class="fa-solid fa-magnifying-glass text-sm"></i>
                 </span>
-                <input type="text" name="code" value="<?= e($trackingCode) ?>" placeholder="e.g. SF-20261119-00001" required maxlength="30"
+                <input type="text" name="code" value="<?= e($trackingCode) ?>" placeholder="e.g. SFX-2641" required maxlength="30"
                        class="w-full pl-10 pr-4 py-3.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-blue-500 transition text-sm">
             </div>
             <button type="submit" class="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition text-sm shadow-sm shrink-0">
@@ -114,16 +114,8 @@ require_once __DIR__ . '/includes/header.php';
                 <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5"><?= e($repair['service_name'] ?: ($repair['issue'] ?? 'General repair')) ?></p>
             </div>
 
-            <!-- 4-Step Progress Bar -->
             <?php if ($status !== 'Cancelled'): ?>
-            <div class="grid grid-cols-4 gap-2 text-center text-xs py-2" aria-label="Repair progress">
-                <?php foreach ($stepLabels as $i => $l): $on = $i < $step; ?>
-                <div class="space-y-2">
-                    <div class="h-2 rounded-full <?= $on ? 'bg-blue-600' : 'bg-slate-200 dark:bg-slate-800' ?>"></div>
-                    <span class="block <?= $on ? 'font-semibold text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500' ?>"><?= e($l) ?></span>
-                </div>
-                <?php endforeach; ?>
-            </div>
+            <div class="py-2"><?= progress_stepper($step, $stepLabels) ?></div>
             <?php endif; ?>
 
             <!-- Cost & Turnaround -->

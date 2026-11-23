@@ -61,7 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Optional service: must exist in the database
         $serviceId = null;
-        if (!$errors && $serviceIdRaw !== '') {
+        if (!$errors && $serviceIdRaw !== '' && $serviceIdRaw !== 'other') {
             try {
                 $chk = $pdo->prepare('SELECT service_id FROM services WHERE service_id = ?');
                 $chk->execute([(int) $serviceIdRaw]);
@@ -79,35 +79,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($errors) {
             $error = reset($errors);   // show the first problem
         } else {
-            // 3. Save inside a transaction: insert, build the Request ID from the row ID, commit
+            // 3. Save: pick a unique ticket like SFX-1506, insert, retry on the rare duplicate
             try {
-                $pdo->beginTransaction();
-
-                $stmt = $pdo->prepare(
-                    'INSERT INTO repair_requests
-                        (request_code, service_id, customer_name, email, phone,
-                         device_brand, device_model, issue, notes)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
-                );
-                $stmt->execute([
-                    'TMP-' . bin2hex(random_bytes(8)),   // temporary, replaced below
-                    $serviceId,
-                    $customerName,
-                    $email,
-                    normalize_phone($phone),
-                    $deviceBrand,
-                    $deviceModel,
-                    $issue,
-                    $notes !== '' ? $notes : null,
-                ]);
-
-                $id   = (int) $pdo->lastInsertId();
-                $code = generate_request_code($id);   // e.g. SF-20261111-00001
-
-                $upd = $pdo->prepare('UPDATE repair_requests SET request_code = ? WHERE request_id = ?');
-                $upd->execute([$code, $id]);
-
-                $pdo->commit();
+                $code = null;
+                for ($try = 0; $try < 5 && $code === null; $try++) {
+                    $candidate = generate_request_code($pdo);
+                    try {
+                        $stmt = $pdo->prepare(
+                            'INSERT INTO repair_requests
+                                (request_code, service_id, customer_name, email, phone,
+                                 device_brand, device_model, issue, notes)
+                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+                        );
+                        $stmt->execute([
+                            $candidate,
+                            $serviceId,
+                            $customerName,
+                            $email,
+                            normalize_phone($phone),
+                            $deviceBrand,
+                            $deviceModel,
+                            $issue,
+                            $notes !== '' ? $notes : null,
+                        ]);
+                        $code = $candidate;
+                    } catch (PDOException $dup) {
+                        if ($dup->getCode() !== '23000') { throw $dup; }   // only retry on a duplicate code
+                    }
+                }
+                if ($code === null) {
+                    throw new RuntimeException('Could not generate a unique ticket code');
+                }
 
                 unset($_SESSION['csrf_token']);   // fresh token for the next form
                 $successCode = $code;
@@ -118,9 +120,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'date'   => date('M j, Y g:i A'),
                 ];
             } catch (Throwable $e) {
-                if ($pdo->inTransaction()) {
-                    $pdo->rollBack();
-                }
                 error_log('request.php save failed: ' . $e->getMessage());
                 $error = "An error occurred while submitting your repair request. Please try again later.";
             }
@@ -129,7 +128,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Shared input styling
-$inputCls = 'w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-blue-500 text-sm transition';
+$inputCls = 'w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm transition-colors';
+$selectCls = $inputCls;   // same solid dark background as index.php, so the dropdown list matches too
+$optCls    = 'bg-white text-slate-900 dark:bg-slate-950 dark:text-white';
+$selSvc    = (string) ($_POST['service_id'] ?? '');
 $labelCls = 'block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2';
 
 require_once __DIR__ . '/includes/header.php';
@@ -236,16 +238,12 @@ require_once __DIR__ . '/includes/header.php';
                     </div>
                     <div>
                         <label for="service_id" class="<?= $labelCls ?>">Repair type</label>
-                        <select id="service_id" name="service_id" class="<?= $inputCls ?>">
-                            <option value="">Select a repair</option>
-                            <?php foreach ($services as $s):
-                                $sid   = (int) $s['service_id'];
-                                $sname = $s['service_name'];
-                            ?>
-                                <option value="<?= $sid ?>" <?= ((string) ($_POST['service_id'] ?? '') === (string) $sid) ? 'selected' : '' ?>>
-                                    <?= e($sname) ?>
-                                </option>
+                        <select id="service_id" name="service_id" required class="<?= $selectCls ?>">
+                            <option value="" disabled <?= $selSvc === '' ? 'selected' : '' ?> class="text-slate-400">Select a repair</option>
+                            <?php foreach ($services as $s): $sid = (int) $s['service_id']; ?>
+                                <option value="<?= $sid ?>" class="<?= $optCls ?>" <?= $selSvc === (string) $sid ? 'selected' : '' ?>><?= e($s['service_name']) ?></option>
                             <?php endforeach; ?>
+                            <option value="other" class="<?= $optCls ?>" <?= $selSvc === 'other' ? 'selected' : '' ?>>Other repair</option>
                         </select>
                     </div>
                 </div>

@@ -98,9 +98,19 @@ function validate_request_form(array $data): array
 }
 
 // Builds the Request ID, e.g. SF-20261105-00042
-function generate_request_code(int $id): string
+// Builds a ticket like SFX-1506. Picks a random 4-digit number and checks it isn't taken.
+function generate_request_code(PDO $pdo): string
 {
-    return 'SF-' . date('Ymd') . '-' . str_pad((string) $id, 5, '0', STR_PAD_LEFT);
+    $check = $pdo->prepare('SELECT 1 FROM repair_requests WHERE request_code = ? LIMIT 1');
+    for ($i = 0; $i < 30; $i++) {
+        $code = 'SFX-' . random_int(1000, 9999);
+        $check->execute([$code]);
+        if (!$check->fetchColumn()) {
+            return $code;
+        }
+    }
+    // Very unlikely: the 4-digit range is crowded, so fall back to 5 digits
+    return 'SFX-' . random_int(10000, 99999);
 }
 
 // Returns the HTML for a field's error message (empty string if none).
@@ -118,6 +128,7 @@ function icon(string $name, string $class = 'w-5 h-5'): string
     static $paths = [
         'wrench'       => '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>',
         'smartphone'   => '<rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/>',
+        'box'          => '<path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>',
         'clock'        => '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
         'check-circle' => '<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>',
         'shield-check' => '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>',
@@ -149,6 +160,29 @@ function status_badge(string $status): string
     $class = $styles[$status] ?? 'bg-slate-500/15 text-slate-300 border-slate-500/30';
     return '<span class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ' . $class . '">'
          . '<span class="w-1.5 h-1.5 rounded-full bg-current"></span>' . e($status) . '</span>';
+}
+
+function progress_stepper(int $step, array $labels): string
+{
+    $n    = count($labels);
+    $html = '<div class="flex items-start" aria-label="Repair progress">';
+    foreach ($labels as $i => $label) {
+        $done   = $i < $step;
+        $circle = $done ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500';
+        $html  .= '<div class="relative flex-1 flex flex-col items-center text-center">';
+        if ($i < $n - 1) {   // connecting line to the next step
+            $line  = ($i + 1 < $step) ? 'bg-blue-600' : 'bg-slate-200 dark:bg-slate-800';
+            $html .= '<span class="absolute top-[15px] left-1/2 h-0.5 w-full ' . $line . '"></span>';
+        }
+        $html .= '<span class="relative z-10 grid h-8 w-8 place-items-center rounded-full text-xs font-semibold ' . $circle . '">';
+        $html .= $done
+            ? '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>'
+            : (string) ($i + 1);
+        $html .= '</span>';
+        $html .= '<span class="mt-2 text-xs ' . ($done ? 'font-medium text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500') . '">' . e($label) . '</span>';
+        $html .= '</div>';
+    }
+    return $html . '</div>';
 }
 
 // Validation for the admin add/edit service form. Returns errors keyed by field.
