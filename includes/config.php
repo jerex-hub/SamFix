@@ -3,7 +3,7 @@
 const DB_HOST = 'localhost';
 const DB_NAME = 'samfix';
 const DB_USER = 'root';
-const DB_PASS = 'abregana';   // empty '' only if your MySQL has no password
+const DB_PASS = 'jerex';   // usba lang ni if unsa pass sa inyo db
 
 // App settings
 const APP_NAME = 'SamFix';
@@ -14,7 +14,7 @@ const STATUSES = ['Pending', 'In Progress', 'Ready for pickup', 'Completed', 'Ca
 // Shop details shown on the home page (edit these to your real shop info)
 const SHOP_NAME       = 'SamFix Service Center';
 const SHOP_ADDRESS    = 'Your street address, City, Province';
-const SHOP_HOURS      = ['Monday to Friday · 9 AM to 6 PM', 'Saturday · 10 AM to 4 PM'];
+const SHOP_HOURS      = ['Monday to Friday · 9 AM to 6 PM', 'Saturday · 10  AM to 4 PM'];
 const SHOP_PHONE      = '0900 000 0000';
 const SHOP_EMAIL      = 'hello@samfix.example';
 const SHOP_TURNAROUND = '2–3 business days';
