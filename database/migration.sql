@@ -4,7 +4,7 @@ USE samfix;
 ALTER TABLE repair_requests
   MODIFY status ENUM('Pending','In Progress','Ready for pickup','Completed','Cancelled')
   NOT NULL DEFAULT 'Pending';
-
+ 
 CREATE TABLE IF NOT EXISTS technicians (
   technician_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   full_name     VARCHAR(100) NOT NULL,

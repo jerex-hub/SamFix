@@ -59,7 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
             <span class="text-xl font-bold tracking-tight text-gray-900"><?= e(APP_NAME) ?><span class="text-[#2563EB]">.</span></span>
         </div>
-
+ 
         <h2 class="text-xl font-bold text-gray-900">Sign in to Admin workspace</h2>
         <p class="text-xs text-gray-500 mt-1 mb-6"><?= e(defined('SHOP_NAME') ? SHOP_NAME : APP_NAME) ?> · Administration</p>
 

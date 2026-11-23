@@ -3,7 +3,7 @@
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/helpers.php';
-
+ 
 start_secure_session();
 if (empty($_SESSION['admin_logged_in'])) { header('Location: login.php'); exit; }
 if (empty($_SESSION['csrf'])) { $_SESSION['csrf'] = bin2hex(random_bytes(16)); }

@@ -38,6 +38,6 @@ View your repair status, estimated cost, technician information, and repair prog
 Visit the workshop or contact the service center if you need further assistance.
 
 ## Contributing
-Guidelines for contributing to the project
+Guidelines for contributing to the project.
 ## License
 Details about the project's license
