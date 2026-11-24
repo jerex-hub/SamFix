@@ -67,7 +67,7 @@ require_once __DIR__ . '/includes/header.php';
 
     <!-- Search Box Card -->
     <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-8 shadow-sm transition-colors duration-200 mb-8">
-        <form method="GET" action="track.php" class="flex flex-col sm:flex-row gap-3">
+        <form method="GET" action="track.php" class="flex flex-col sm:flex-row gap-3" data-validate>
             <div class="relative flex-1">
                 <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                     <i class="fa-solid fa-magnifying-glass text-sm"></i>
