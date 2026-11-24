@@ -69,7 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         <?php endif; ?>
 
-        <form method="POST" class="space-y-4" autocomplete="off">
+        <form method="POST" class="space-y-4" autocomplete="off" data-validate>
             <div>
                 <label for="username" class="block text-xs font-medium text-gray-700 mb-1.5">Username</label>
                 <input type="text" id="username" name="username" value="<?= e($_POST['username'] ?? '') ?>" required maxlength="50" autofocus
@@ -85,6 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </button>
         </form>
     </div>
+    <script src="../assets/js/app.js" defer></script>
     <script>lucide.createIcons();</script>
 </body>
 </html>
