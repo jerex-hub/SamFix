@@ -5,7 +5,7 @@ require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/helpers.php';
  
 start_secure_session();
-if (empty($_SESSION['admin_logged_in'])) { header('Location: login.php'); exit; }
+if (empty($_SESSION['admin_logged_in']) && empty($_SESSION['admin_id'])) { header('Location: login.php'); exit; }
 if (empty($_SESSION['csrf'])) { $_SESSION['csrf'] = bin2hex(random_bytes(16)); }
 
 $adminId = !empty($_SESSION['admin_id']) ? (int)$_SESSION['admin_id'] : null;
@@ -19,7 +19,7 @@ function av(string $name, string $size = 'w-8 h-8 text-[11px]'): string {
     return '<span class="' . $size . ' rounded-full font-semibold flex items-center justify-center shrink-0" style="background:hsl(' . $h . ' 70% 50% / .16);color:hsl(' . $h . ' 70% 48%)">' . e(initials($name)) . '</span>';
 }
 function badge_class(string $s): string {
-    return match ($s) { 'Completed' => 'g', 'In Progress' => 'b', 'Pending' => 'a', default => 's' };
+    return match ($s) { 'Completed' => 'g', 'In Progress' => 'b', 'Pending' => 'a', 'Ready for pickup' => 'a', default => 's' };
 }
 function tech_options(array $techs, $sel = null, bool $all = false): string {
     $h = '<option value="">Unassigned</option>';
@@ -203,6 +203,7 @@ $cnt     = array_count_values(array_column($jobs, 'status'));
 $pending = $cnt['Pending'] ?? 0;
 $inprog  = $cnt['In Progress'] ?? 0;
 $done    = $cnt['Completed'] ?? 0;
+$ready = $cnt['Ready for pickup'] ?? 0;
 $active  = $pending + $inprog;
 $value   = array_sum(array_column($jobs, 'price'));
 $adminName = 'Admin';
@@ -229,8 +230,7 @@ function render_table(array $jobs, int $active, string $p): void { ?>
   </div>
   <div class="px-5 sm:px-6 pb-4 flex flex-col xl:flex-row xl:items-center justify-between gap-3">
     <div class="sub bd border inline-flex flex-wrap p-1 rounded-lg gap-1 self-start">
-      <?php foreach (['ALL' => 'All repairs', 'ACTIVE' => 'Active', 'Pending' => 'Pending', 'In Progress' => 'In progress', 'Completed' => 'Completed'] as $k => $l): ?>
-      <button data-f="<?= $k ?>" class="ftab px-3 py-1.5 text-xs font-medium rounded-md flex items-center gap-1.5 <?= $k === 'ALL' ? 'on' : '' ?>"><?= $l ?><?php if ($k === 'ACTIVE'): ?><span class="pill text-[10px] px-1.5 rounded-full"><?= $active ?></span><?php endif; ?></button>
+<?php foreach (['ALL' => 'All repairs', 'ACTIVE' => 'Active', 'Pending' => 'Pending', 'In Progress' => 'In progress', 'Ready for pickup' => 'Ready for pickup', 'Completed' => 'Completed'] as $k => $l): ?>      <button data-f="<?= $k ?>" class="ftab px-3 py-1.5 text-xs font-medium rounded-md flex items-center gap-1.5 <?= $k === 'ALL' ? 'on' : '' ?>"><?= $l ?><?php if ($k === 'ACTIVE'): ?><span class="pill text-[10px] px-1.5 rounded-full"><?= $active ?></span><?php endif; ?></button>
       <?php endforeach; ?>
     </div>
     <div class="relative w-full sm:w-64">
@@ -259,8 +259,7 @@ function render_table(array $jobs, int $active, string $p): void { ?>
           <td class="py-3.5 px-4 t2"><?= e($j['date']) ?></td>
           <td class="py-3.5 pr-6 pl-3 text-right whitespace-nowrap">
             <button type="button" aria-label="Edit <?= e($j['request_code']) ?>" data-edit="<?= e(json_encode($j)) ?>" class="ico p-1.5 rounded-lg"><i data-lucide="pencil" class="w-4 h-4"></i></button>
-            <form method="POST" class="inline" onsubmit="return confirm('Delete <?= e($j['request_code']) ?>? This cannot be undone.')">
-              <?= csrf() ?><input type="hidden" name="action" value="delete_repair"><input type="hidden" name="request_code" value="<?= e($j['request_code']) ?>">
+                <form method="POST" class="inline" data-confirm="Delete this repair?">              <?= csrf() ?><input type="hidden" name="action" value="delete_repair"><input type="hidden" name="request_code" value="<?= e($j['request_code']) ?>">
               <button type="submit" aria-label="Delete <?= e($j['request_code']) ?>" class="ico del p-1.5 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
             </form>
           </td>
@@ -397,6 +396,7 @@ html.dark .tone-blue{background:#172554b3;color:#60a5fa}html.dark .tone-amber{ba
     <nav class="space-y-1">
       <button data-tab="team" data-label="Team members" class="nav w-full flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-lg"><i data-lucide="users-round" class="w-4 h-4"></i>Team members</button>
       <button data-tab="settings" data-label="Settings" class="nav w-full flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-lg"><i data-lucide="settings" class="w-4 h-4"></i>Settings</button>
+      <a href="services.php" class="nav w-full flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-lg"><i data-lucide="tag" class="w-4 h-4"></i>Services &amp; prices</a>
     </nav>
   </div>
   <div class="p-5 space-y-4">
@@ -408,8 +408,7 @@ html.dark .tone-blue{background:#172554b3;color:#60a5fa}html.dark .tone-amber{ba
     </div>
     <div class="bd border-t pt-3 flex items-center justify-between px-1">
       <button onclick="openModal('help-modal')" class="t2 flex items-center gap-2 text-xs font-medium hover:opacity-80"><i data-lucide="help-circle" class="w-4 h-4"></i>Help &amp; support</button>
-      <a href="logout.php" title="Log out" aria-label="Log out" class="t2 hover:text-rose-500"><i data-lucide="log-out" class="w-4 h-4"></i></a>
-    </div>
+      <button type="button" onclick="openModal('logout-modal')" title="Log out" aria-label="Log out" class="t2 hover:text-rose-500"><i data-lucide="log-out" class="w-4 h-4"></i></button>    </div>
   </div>
 </aside>
 
@@ -459,12 +458,13 @@ html.dark .tone-blue{background:#172554b3;color:#60a5fa}html.dark .tone-amber{ba
 
     <section id="view-repairs" class="tab-view hidden space-y-6">
       <?php head('Repair jobs', 'Keep every repair moving, from check-in to pickup.'); ?>
-      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <?php kpi('Total repairs', $total, 'All statuses', 'smartphone', 'blue');
-              kpi('Pending', $pending, 'Waiting to start', 'clock', 'amber');
-              kpi('In progress', $inprog, 'On the bench', 'wrench', 'blue');
-              kpi('Completed', $done, 'Ready or picked up', 'check-circle-2', 'green'); ?>
-      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
+  <?php kpi('Total repairs', $total, 'All statuses', 'smartphone', 'blue');
+        kpi('Pending', $pending, 'Waiting to start', 'clock', 'amber');
+        kpi('In progress', $inprog, 'On the bench', 'wrench', 'blue');
+        kpi('Ready for pickup', $ready, 'Waiting for the customer', 'package-check', 'purple');
+        kpi('Completed', $done, 'Picked up and done', 'check-circle-2', 'green'); ?>
+</div>
       <?php render_table($jobs, $active, 'rep'); ?>
     </section>
 
@@ -608,8 +608,7 @@ html.dark .tone-blue{background:#172554b3;color:#60a5fa}html.dark .tone-amber{ba
       <label class="block"><span class="t1 block mb-1.5">Notes</span><textarea name="notes" id="e-notes" rows="2" class="inp w-full border rounded-lg px-3 py-2.5"></textarea></label>
       <div class="sub bd border rounded-lg px-4 py-3 flex items-center gap-2.5 t2"><i data-lucide="clock" class="w-4 h-4 shrink-0"></i><span id="e-meta"></span></div>
       <div class="bd border-t pt-4 flex items-center justify-between gap-2">
-        <button type="submit" name="action" value="delete_repair" onclick="return confirm('Delete this repair? This cannot be undone.')" class="px-3 py-2 rounded-lg font-medium" style="background:#FFE4E6;color:#E11D48">Delete</button>
-        <div class="flex gap-2">
+<button type="submit" name="action" value="delete_repair" data-confirm="Delete this repair?" class="px-3 py-2 rounded-lg font-medium" style="background:#FFE4E6;color:#E11D48">Delete</button>        <div class="flex gap-2">
           <a id="e-view" href="../index.php" target="_blank" rel="noopener" class="btn-o px-4 py-2 rounded-lg font-medium">Customer view</a>
           <button class="btn-p inline-flex items-center gap-1.5 px-4 py-2 rounded-lg font-medium">Save updates <i data-lucide="check" class="w-3.5 h-3.5"></i></button>
         </div>
@@ -639,6 +638,24 @@ html.dark .tone-blue{background:#172554b3;color:#60a5fa}html.dark .tone-amber{ba
       <div><p class="font-semibold t1">How do I track a repair?</p><p class="t2 mt-1">Use “Track a repair” in the header, or press Ctrl/⌘ + K.</p></div>
     </div>
     <button onclick="closeModals()" class="btn-p inline-flex items-center gap-1.5 text-xs font-medium px-4 py-2 rounded-lg">Got it <i data-lucide="check" class="w-3.5 h-3.5"></i></button>
+  </div>
+</div>
+
+<div id="logout-modal" class="modal fixed inset-0 z-50 hidden items-center justify-center p-4" role="dialog" aria-modal="true">
+  <div class="card border rounded-2xl max-w-sm w-full p-6 relative">
+    <button type="button" onclick="closeModals()" class="t2 absolute right-5 top-5" aria-label="Close"><i data-lucide="x" class="w-4 h-4"></i></button>
+    <span class="pill w-10 h-10 rounded-xl flex items-center justify-center mb-4"><i data-lucide="log-out" class="w-5 h-5"></i></span>
+    <h3 class="text-base font-bold t1 mb-1">Confirm your password</h3>
+    <p class="text-xs t2 mb-4">Enter your password to sign out.</p>
+    <form method="POST" action="logout.php" class="space-y-3 text-xs" data-validate>
+      <?= csrf() ?><input type="hidden" name="back" value="requests.php">
+      <label for="logout-pass" class="block"><span class="t1 block mb-1">Password</span>
+        <input type="password" id="logout-pass" name="password" required autocomplete="current-password" class="inp w-full border rounded-lg px-3 py-2.5"></label>
+      <div class="flex justify-end gap-2 pt-1">
+        <button type="button" onclick="closeModals()" class="btn-o px-4 py-2 rounded-lg">Cancel</button>
+        <button type="submit" class="btn-p px-4 py-2 rounded-lg font-medium">Sign out</button>
+      </div>
+    </form>
   </div>
 </div>
 
@@ -714,7 +731,7 @@ function goRepairs(filter) {
 $('#cust-search')?.addEventListener('input', e => { const q = e.target.value.toLowerCase().trim(); $$('.cust').forEach(c => c.style.display = c.dataset.cs.includes(q) ? '' : 'none'); });
 
 /* Track modal (all values escaped) */
-const BADGE = { 'Completed': 'g', 'In Progress': 'b', 'Pending': 'a' };
+const BADGE = { 'Completed': 'g', 'In Progress': 'b', 'Pending': 'a', 'Ready for pickup': 'a' };
 $('#track-q').addEventListener('input', e => {
   const q = e.target.value.toLowerCase().trim(), out = $('#track-out');
   if (!q) { out.innerHTML = ''; return; }
@@ -740,5 +757,6 @@ $$('[data-teamform]').forEach(f => {
 paintWs(); paintTheme();
 const tab = (store.get('tab') || '').split('|'); if (tab[0] && $('#view-' + tab[0])) switchTab(tab[0], tab[1]);
 </script>
+<script src="../assets/js/app.js" defer></script>
 </body>
 </html>
