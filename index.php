@@ -124,7 +124,7 @@ require __DIR__ . '/includes/header.php';
                     <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">Enter the ticket number from your repair receipt.</p>
                 </div>
 
-                <form action="index.php#track" method="get">
+                <form action="index.php#track" method="get" data-validate>
                     <label for="search" class="sr-only">Ticket number</label>
                     <div class="relative flex items-center">
                         <span class="absolute left-4 text-slate-400 dark:text-slate-500 pointer-events-none"><?= icon('search', 'w-5 h-5') ?></span>
@@ -170,20 +170,13 @@ require __DIR__ . '/includes/header.php';
                     </div>
 
                     <?php if ($status !== 'Cancelled'): ?>
-                    <div class="grid grid-cols-4 gap-2 text-center text-xs py-2" aria-label="Repair progress">
-                        <?php foreach ($stepLabels as $i => $l): $on = $i < $step; ?>
-                        <div class="space-y-2">
-                            <div class="h-2 rounded-full <?= $on ? 'bg-blue-600' : 'bg-slate-200 dark:bg-slate-800' ?>"></div>
-                            <span class="block <?= $on ? 'font-semibold text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500' ?>"><?= $l ?></span>
-                        </div>
-                        <?php endforeach; ?>
-                    </div>
+                    <div class="py-2"><?= progress_stepper($step, $stepLabels) ?></div>
                     <?php endif; ?>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div class="<?= $well ?> p-4 rounded-2xl">
                             <span class="text-xs text-slate-400 dark:text-slate-500 block mb-1">Estimated repair cost</span>
-                            <span class="text-xl font-bold text-slate-900 dark:text-white"><?= $cost !== null ? $cur . number_format((float)$cost, 2) : 'To be confirmed' ?></span>
+                            <span class="text-xl font-bold text-slate-900 dark:text-white"><?= $cost !== null && (float)$cost > 0 ? $cur . number_format((float)$cost, 2) : 'To be confirmed' ?></span>
                         </div>
                         <div class="<?= $well ?> p-4 rounded-2xl">
                             <span class="text-xs text-slate-400 dark:text-slate-500 block mb-1">Estimated turnaround</span>
@@ -291,7 +284,7 @@ require __DIR__ . '/includes/header.php';
                 </div>
                 <?php endif; ?>
 
-                <form action="request.php" method="post" class="space-y-6">
+                <form action="request.php" method="post" class="space-y-6" data-validate>
                     <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
                     <div class="grid gap-6 md:grid-cols-2">
                         <?php foreach ([
@@ -305,14 +298,14 @@ require __DIR__ . '/includes/header.php';
                             <input type="<?= $type ?>" id="<?= $id ?>" name="<?= $id ?>" required maxlength="<?= $max ?>" placeholder="<?= e($ph) ?>" class="<?= $field ?>"></div>
                         <?php endforeach; ?>
                         <div><label for="service_id" class="<?= $label ?>">Repair type</label>
-                            <select id="service_id" name="service_id" required class="<?= str_replace('dark:bg-slate-950', 'dark:bg-slate-950', $field) ?>">
+                                <select id="service_id" name="service_id" required data-error="Please choose a repair type." class="<?= $field ?>">
     <option value="" disabled selected>Select a repair</option>
     <?php if (!$usingFallback) foreach ($services as $s): ?>
     <option value="<?= (int)$s['service_id'] ?>" class="bg-white text-slate-900 dark:bg-slate-950 dark:text-white"><?= e($s['service_name']) ?></option>
     <?php endforeach; ?>
     <option value="other" class="bg-white text-slate-900 dark:bg-slate-950 dark:text-white">Other repair</option>
 </select>
-                            </select></div>
+            </div>
                     </div>
                     <div><label for="issue" class="<?= $label ?>">What is the problem?</label>
                         <input type="text" id="issue" name="issue" required maxlength="255" placeholder="e.g. Cracked screen" class="<?= $field ?>"></div>
