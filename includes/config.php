@@ -7,7 +7,7 @@ const DB_PASS = 'abregana';   // usba lang ni if unsa pass sa inyo db
 
 // App settings
 const APP_NAME = 'SamFix';
-const BASE_URL = '/SamFix';  // must match how you open the site
+const BASE_URL = '';  // must match how you open the site
 
 const STATUSES = ['Pending', 'In Progress', 'Ready for pickup', 'Completed', 'Cancelled'];
 
