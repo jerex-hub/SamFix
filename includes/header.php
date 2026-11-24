@@ -54,6 +54,9 @@
             }
         }
     </style>
+
+        <script src="assets/js/app.js" defer></script>
+
 </head>
 <body class="bg-[#F8FAFC] dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans antialiased min-h-screen flex flex-col justify-between transition-colors duration-200">
 
@@ -82,6 +85,10 @@
 
             <!-- Right Actions (Dark Mode Toggle & Help & Support) -->
             <div class="flex items-center gap-2 shrink-0">
+
+             <button id="mobileMenuBtn" type="button" class="md:hidden w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 flex items-center justify-center transition shadow-sm" aria-label="Open menu" aria-expanded="false" aria-controls="mobileMenu">
+            <i class="fa-solid fa-bars text-sm"></i>
+            </button>
                 <button id="darkModeToggle" type="button" class="w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white flex items-center justify-center transition shadow-sm" title="Toggle Dark Mode">
                     <i id="darkModeIcon" class="fa-regular fa-sun text-sm"></i>
                 </button>
@@ -92,6 +99,13 @@
                 </button>
             </div>
 
+        </div>
+            <div id="mobileMenu" class="hidden md:hidden border-t border-slate-200 dark:border-slate-800 py-3 space-y-1">
+            <a href="track.php" class="block px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition">Track repair</a>
+            <a href="index.php#services" class="block px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition">Services</a>
+            <a href="request.php" class="block px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition">Book a repair</a>
+            <a href="index.php#visit" class="block px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition">Visit us</a>
+            <button id="mobileHelpBtn" type="button" class="block w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition">Help &amp; support</button>
         </div>
     </div>
 </nav>
