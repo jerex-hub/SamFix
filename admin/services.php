@@ -104,8 +104,7 @@ html.dark .tone-green{background:#052e16b3;color:#34d399}html.dark .tone-amber{b
   <div class="p-5">
     <div class="flex items-center gap-2.5 px-1 mb-6">
       <span class="btn-p w-8 h-8 rounded-lg flex items-center justify-center"><i data-lucide="wrench" class="w-4 h-4"></i></span>
-      <span class="text-xl font-bold tracking-tight t1"><?= e(strtolower(APP_NAME)) ?><span class="acct">.</span></span>
-    </div>
+      <span class="text-xl font-bold tracking-tight t1"><?= e(APP_NAME) ?><span class="acct">.</span></span>    </div>
     <p class="px-3 text-[10px] font-semibold t3 uppercase tracking-wider mb-2">Workspace</p>
     <nav class="space-y-1">
       <a href="requests.php" class="nav w-full flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-lg"><i data-lucide="shield-check" class="w-4 h-4"></i>Admin dashboard</a>
@@ -115,8 +114,7 @@ html.dark .tone-green{background:#052e16b3;color:#34d399}html.dark .tone-amber{b
   <div class="p-5">
     <div class="bd border-t pt-3 flex items-center justify-between px-1">
       <a href="../index.php" target="_blank" rel="noopener" class="t2 flex items-center gap-2 text-xs font-medium hover:opacity-80"><i data-lucide="external-link" class="w-4 h-4"></i>Customer site</a>
-      <a href="logout.php" title="Log out" aria-label="Log out" class="t2 hover:text-rose-500"><i data-lucide="log-out" class="w-4 h-4"></i></a>
-    </div>
+      <button type="button" onclick="openLogout()" title="Log out" aria-label="Log out" class="t2 hover:text-rose-500"><i data-lucide="log-out" class="w-4 h-4"></i></button>    </div>
   </div>
 </aside>
 
@@ -197,7 +195,28 @@ html.dark .tone-green{background:#052e16b3;color:#34d399}html.dark .tone-amber{b
   </div>
 </div>
 
+<div id="logout-modal" class="modal fixed inset-0 z-50 hidden items-center justify-center p-4" role="dialog" aria-modal="true">
+  <div class="card border rounded-2xl max-w-sm w-full p-6 relative">
+    <button type="button" onclick="closeModals()" class="t2 absolute right-5 top-5" aria-label="Close"><i data-lucide="x" class="w-4 h-4"></i></button>
+    <span class="pill w-10 h-10 rounded-xl flex items-center justify-center mb-4"><i data-lucide="log-out" class="w-5 h-5"></i></span>
+    <h3 class="text-base font-bold t1 mb-1">Confirm your password</h3>
+    <p class="text-xs t2 mb-4">Enter your password to sign out.</p>
+    <form method="POST" action="logout.php" class="space-y-3 text-xs" data-validate>
+      <?= csrf() ?><input type="hidden" name="back" value="requests.php">
+      <label for="logout-pass" class="block"><span class="t1 block mb-1">Password</span>
+        <input type="password" id="logout-pass" name="password" required autocomplete="current-password" class="inp w-full border rounded-lg px-3 py-2.5"></label>
+      <div class="flex justify-end gap-2 pt-1">
+        <button type="button" onclick="closeModals()" class="btn-o px-4 py-2 rounded-lg">Cancel</button>
+        <button type="submit" class="btn-p px-4 py-2 rounded-lg font-medium">Sign out</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script>
+function openLogout() { const m = $('#logout-modal'); m.classList.remove('hidden'); m.classList.add('flex'); setTimeout(() => $('#logout-pass').focus(), 30); }
+function closeLogout() { const m = $('#logout-modal'); m.classList.add('hidden'); m.classList.remove('flex'); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLogout(); });
 const $ = s => document.querySelector(s);
 function toggleSidebar() { $('#sidebar').classList.toggle('-translate-x-full'); $('#backdrop').classList.toggle('hidden'); }
 function paintTheme() { const d = document.documentElement.classList.contains('dark'); $('#theme-btn').innerHTML = `<i data-lucide="${d ? 'sun' : 'moon'}" class="w-4 h-4"></i>`; lucide.createIcons(); }
