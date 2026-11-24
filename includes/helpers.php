@@ -97,7 +97,6 @@ function validate_request_form(array $data): array
     return $errors;
 }
 
-// Builds the Request ID, e.g. SF-20261105-00042
 // Builds a ticket like SFX-1506. Picks a random 4-digit number and checks it isn't taken.
 function generate_request_code(PDO $pdo): string
 {
@@ -154,6 +153,7 @@ function status_badge(string $status): string
     $styles = [
         'Pending'     => 'bg-yellow-500/15 text-yellow-300 border-yellow-500/30',
         'In Progress' => 'bg-blue-500/15 text-blue-300 border-blue-500/30',
+        'Ready for pickup' => 'bg-amber-500/15 text-amber-300 border-amber-500/30',
         'Completed'   => 'bg-green-500/15 text-green-300 border-green-500/30',
         'Cancelled'   => 'bg-red-500/15 text-red-300 border-red-500/30',
     ];
