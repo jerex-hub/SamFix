@@ -8,7 +8,19 @@ start_secure_session();
 if (empty($_SESSION['admin_logged_in']) && empty($_SESSION['admin_id'])) { header('Location: login.php'); exit; }
 if (empty($_SESSION['csrf'])) { $_SESSION['csrf'] = bin2hex(random_bytes(16)); }
 
-$adminId = !empty($_SESSION['admin_id']) ? (int)$_SESSION['admin_id'] : null;
+$adminId = null;
+if (!empty($_SESSION['admin_id']) && filter_var($_SESSION['admin_id'], FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]])) {
+    $candidateAdminId = (int) $_SESSION['admin_id'];
+    try {
+        $chkAdmin = $pdo->prepare('SELECT admin_id FROM administrators WHERE admin_id = ? LIMIT 1');
+        $chkAdmin->execute([$candidateAdminId]);
+        if ($chkAdmin->fetchColumn() !== false) {
+            $adminId = $candidateAdminId;
+        }
+    } catch (PDOException $e) {
+        error_log('requests.php admin lookup failed: ' . $e->getMessage());
+    }
+}
 $self    = strtok($_SERVER['REQUEST_URI'], '?');
 
 function csrf(): string { return '<input type="hidden" name="csrf" value="' . e($_SESSION['csrf']) . '">'; }
@@ -85,8 +97,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 $code = trim((string)($_POST['request_code'] ?? ''));
                 $notes = trim((string)($_POST['notes'] ?? ''));
                 if ($code !== '') {
-                    $pdo->prepare('UPDATE repair_requests SET status = ?, service_id = ?, technician_id = ?, estimated_cost = ?, notes = ?, updated_by = ? WHERE request_code = ?')
-                        ->execute([$status, $svcId, $techId, $cost, $notes !== '' ? $notes : null, $adminId, $code]);
+                    $stmt = $pdo->prepare(
+                        'UPDATE repair_requests
+                         SET status = ?, service_id = ?, technician_id = ?, estimated_cost = ?, notes = ?, updated_by = ?
+                         WHERE request_code = ?'
+                    );
+                    $stmt->bindValue(1, $status, PDO::PARAM_STR);
+                    $stmt->bindValue(2, $svcId, $svcId === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
+                    $stmt->bindValue(3, $techId, $techId === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
+                    $stmt->bindValue(4, $cost, $cost === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
+                    $stmt->bindValue(5, $notes !== '' ? $notes : null, $notes !== '' ? PDO::PARAM_STR : PDO::PARAM_NULL);
+                    $stmt->bindValue(6, $adminId, $adminId === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
+                    $stmt->bindValue(7, $code, PDO::PARAM_STR);
+                    $stmt->execute();
                     $msg = "Updated repair {$code}.";
                 }
             } elseif ($action === 'delete_repair') {
