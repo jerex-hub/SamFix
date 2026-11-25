@@ -21,11 +21,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $wait = login_locked_seconds();
     if ($wait > 0) {
         $error = 'Too many failed attempts. Try again in ' . ceil($wait / 60) . ' minute(s).';
+    } elseif (!verify_csrf($_POST['csrf_token'] ?? '')) {
+        $error = 'Session expired, please try again.';
     } elseif ($username === '' || $password === '') {
         $error = 'Enter your username and password.';
     } else {
         try {
             if (login_admin($pdo, $username, $password)) {
+                session_regenerate_id(true);
                 $_SESSION['admin_logged_in'] = true;   // the dashboard checks this flag
                 header('Location: requests.php');
                 exit;
@@ -70,6 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php endif; ?>
 
         <form method="POST" class="space-y-4" autocomplete="off" data-validate>
+            <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
             <div>
                 <label for="username" class="block text-xs font-medium text-gray-700 mb-1.5">Username</label>
                 <input type="text" id="username" name="username" value="<?= e($_POST['username'] ?? '') ?>" required maxlength="50" autofocus

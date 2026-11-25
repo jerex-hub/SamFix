@@ -14,6 +14,10 @@ try {
     );
 } catch (PDOException $e) {
     error_log('DB connection failed: ' . $e->getMessage());
-    http_response_code(500);
-    exit('Sorry, something went wrong. Please try again later.');
+   render_error_page(
+        500,
+        'We could not load this page',
+        'Sorry, something went wrong on our side. Please try again later.',
+        $e->getMessage()   // shown only while APP_DEBUG is true
+    );
 }

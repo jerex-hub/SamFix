@@ -3,7 +3,7 @@
 const DB_HOST = 'localhost';
 const DB_NAME = 'samfix';
 const DB_USER = 'root';
-const DB_PASS = 'abregana';   // usba lang ni if unsa pass sa inyo db
+const DB_PASS = 'jerex';   // usba lang ni if unsa pass sa inyo db
 
 // App settings
 const APP_NAME = 'SamFix';
@@ -19,3 +19,9 @@ const SHOP_HOURS      = ['Monday to Friday · 9 AM to 6 PM', 'Saturday · 10 AM 
 const SHOP_PHONE      = '09682215995';
 const SHOP_EMAIL      = 'samfix@gmail.com';
 const SHOP_TURNAROUND = '2–3 business days';
+
+// Error handling (task 5.2)
+const APP_DEBUG = true;   // true while developing; set to false when you deploy
+const LOG_FILE  = __DIR__ . '/../logs/error-log.php';
+
+require_once __DIR__ . '/errors.php'; 

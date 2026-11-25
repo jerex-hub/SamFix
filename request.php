@@ -25,7 +25,7 @@ try {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // 1. Verify CSRF token
     if (!verify_csrf($_POST['csrf_token'] ?? '')) {
-        $error = "Invalid security token. Please refresh the page and try again.";
+        $error = "Session expired. Please try again.";
     } else {
         // Read a posted value safely as a trimmed string
         $get = function (string $key): string {

@@ -80,3 +80,23 @@ function logout_admin(): void
     }
     session_destroy();
 }
+
+function login_wait_seconds(): int
+{
+    return max(0, (int) ($_SESSION['login_locked_until'] ?? 0) - time());
+}
+
+function login_record_failure(): void
+{
+    $_SESSION['login_failures'] = (int) ($_SESSION['login_failures'] ?? 0) + 1;
+
+    if ($_SESSION['login_failures'] >= LOGIN_MAX_ATTEMPTS) {
+        $extra = $_SESSION['login_failures'] - LOGIN_MAX_ATTEMPTS;
+        $_SESSION['login_locked_until'] = time() + min(300, 30 * (2 ** $extra));
+    }
+}
+
+function login_clear_failures(): void
+{
+    unset($_SESSION['login_failures'], $_SESSION['login_locked_until']);
+}
